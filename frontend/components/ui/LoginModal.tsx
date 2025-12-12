@@ -110,7 +110,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
                         className="fixed inset-0 z-[70] flex items-center justify-center pointer-events-none"
                     >
-                        <div className="w-full max-w-md p-8 rounded-2xl bg-black/80 border border-cyan-500/30 shadow-[0_0_50px_rgba(6,182,212,0.3)] pointer-events-auto relative overflow-hidden flex flex-col min-h-[500px]">
+                        <div className="w-full max-w-md p-8 rounded-2xl bg-black/95 border border-cyan-500/30 shadow-[0_0_50px_rgba(6,182,212,0.3)] pointer-events-auto relative overflow-hidden flex flex-col min-h-[500px]">
                             {/* Decorative Top Line */}
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
 

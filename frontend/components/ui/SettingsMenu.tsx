@@ -38,7 +38,7 @@ export default function SettingsMenu() {
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute top-16 right-0 w-64 p-4 rounded-xl bg-black/80 backdrop-blur-xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden"
+                        className="absolute top-16 right-0 w-64 p-4 rounded-xl bg-black/95 backdrop-blur-xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden z-[100]"
                     >
                         <div className="flex items-center gap-2 mb-4 pb-2 border-b border-white/10">
                             <Palette size={16} className="text-cyan-400" />

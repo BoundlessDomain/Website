@@ -9,6 +9,7 @@ import SettingsMenu from "./SettingsMenu";
 import { supabase } from "@/utils/supabase";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { isAdmin } from "@/utils/roles";
+import { useUIStore } from "@/store/uiStore";
 
 interface NavItem {
     label: string;
@@ -34,29 +35,33 @@ function getNameFromEmail(email?: string) {
 }
 
 function NavButton({ item, side }: { item: NavItem, side: 'left' | 'right' }) {
+    const isLoginOpen = useUIStore((state) => state.isLoginOpen);
+
     return (
         <a href={item.href} className={clsx(
-            "group relative flex items-center justify-between gap-4 p-2 w-72 transition-all duration-300 hover:scale-105",
-            side === 'left' ? "flex-row-reverse text-right" : "flex-row text-left"
+            "group relative flex items-center justify-between gap-4 p-2 w-72 transition-all duration-300",
+            side === 'left' ? "flex-row-reverse text-right" : "flex-row text-left",
+            // Pause interactions if Login is Open
+            isLoginOpen ? "pointer-events-none opacity-50 grayscale" : "hover:scale-105 pointer-events-auto"
         )}>
             {/* Text Label */}
             <span className={clsx(
-                "text-cyan-400 font-bold tracking-widest transition-opacity duration-300 whitespace-nowrap",
-                "text-lg shadow-cyan-500/50 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]"
+                "text-primary-text font-bold tracking-widest transition-opacity duration-300 whitespace-nowrap",
+                "text-lg drop-shadow-[0_0_5px_var(--primary-glow)]"
             )}>
                 {item.label}
             </span>
 
             {/* Circle Button */}
-            <div className="relative w-16 h-16 rounded-full border-2 border-cyan-500 bg-gray-900/80 flex items-center justify-center
-                          shadow-[0_0_15px_rgba(6,182,212,0.5)] group-hover:shadow-[0_0_25px_rgba(6,182,212,0.8)]
+            <div className="relative w-16 h-16 rounded-full border-2 border-primary bg-glass flex items-center justify-center
+                          shadow-[0_0_15px_var(--primary-glow)] group-hover:shadow-[0_0_25px_var(--primary-glow)]
                           group-hover:border-white transition-all duration-300">
-                <item.icon className="w-8 h-8 text-cyan-400 group-hover:text-white transition-colors" />
+                <item.icon className="w-8 h-8 text-primary-text group-hover:text-white transition-colors" />
             </div>
 
             {/* Connecting Line (Decorative) - Moved to be "under" text */}
             <div className={clsx(
-                "absolute bottom-0 w-12 h-[2px] bg-cyan-900 -z-10 group-hover:bg-cyan-500 transition-colors",
+                "absolute bottom-0 w-12 h-[2px] bg-secondary-dark -z-10 group-hover:bg-primary transition-colors",
                 side === 'left' ? "right-10 translate-x-full" : "left-10 -translate-x-full"
             )} />
         </a>
@@ -64,7 +69,8 @@ function NavButton({ item, side }: { item: NavItem, side: 'left' | 'right' }) {
 }
 
 export default function NavigationMenu() {
-    const [isLoginOpen, setIsLoginOpen] = useState(false);
+    const isLoginOpen = useUIStore((state) => state.isLoginOpen);
+    const setLoginOpen = useUIStore((state) => state.setLoginOpen);
     const [user, setUser] = useState<SupabaseUser | null>(null);
 
     useEffect(() => {
@@ -86,23 +92,26 @@ export default function NavigationMenu() {
     return (
         <div className="absolute inset-0 z-50 pointer-events-none flex justify-between items-center px-20">
             {/* Login Modal */}
-            <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+            <LoginModal isOpen={isLoginOpen} onClose={() => setLoginOpen(false)} />
 
             {/* Home Button - Top Left (Replaces Logo) */}
             <div className="absolute top-8 left-8 pointer-events-auto">
-                <a href="/" className="flex items-center justify-center w-16 h-16 rounded-full border-2 border-cyan-500/30 bg-black/40 backdrop-blur-md
-                                     hover:border-cyan-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all duration-300 group">
-                    <Home className="w-8 h-8 text-cyan-400 group-hover:text-white transition-colors" />
+                <a href="/" className="flex items-center justify-center w-16 h-16 rounded-full border-2 border-primary-glow bg-glass backdrop-blur-md
+                                     hover:border-primary hover:shadow-[0_0_20px_var(--primary-glow)] transition-all duration-300 group">
+                    <Home className="w-8 h-8 text-primary-text group-hover:text-white transition-colors" />
                 </a>
             </div>
 
             {/* Login/Profile - Top Right */}
-            <div className="absolute top-8 right-8 pointer-events-auto">
+            <div className="absolute top-8 right-8 pointer-events-auto flex items-center gap-4">
+                {/* Settings Menu - Always Accessible */}
+                <SettingsMenu />
+
                 {user ? (
                     <div className="flex items-center gap-4">
                         {/* Greeting */}
                         <div className="flex flex-col items-end mr-2 hidden md:flex">
-                            <span className="text-cyan-400 font-bold tracking-wider text-sm shadow-cyan-500/50 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">
+                            <span className="text-primary-text font-bold tracking-wider text-sm drop-shadow-[0_0_5px_var(--primary-glow)]">
                                 Hello, {user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.username || getNameFromEmail(user.email)}
                             </span>
                             {isAdmin(user.email) && (
@@ -112,16 +121,13 @@ export default function NavigationMenu() {
                             )}
                         </div>
 
-                        {/* Settings Menu */}
-                        <SettingsMenu />
-
                         {/* Profile Circle */}
-                        <div className="w-16 h-16 rounded-full border-2 border-cyan-500 bg-black/40 backdrop-blur-md overflow-hidden relative shadow-[0_0_15px_rgba(6,182,212,0.5)] group">
+                        <div className="w-16 h-16 rounded-full border-2 border-primary bg-glass backdrop-blur-md overflow-hidden relative shadow-[0_0_15px_var(--primary-glow)] group">
                             {user.user_metadata?.avatar_url ? (
                                 <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-cyan-900/50">
-                                    <span className="text-cyan-200 font-bold text-xl uppercase">
+                                <div className="w-full h-full flex items-center justify-center bg-secondary-dark">
+                                    <span className="text-primary-text font-bold text-xl uppercase">
                                         {user.user_metadata?.username?.[0] || user.email?.[0] || "U"}
                                     </span>
                                 </div>
@@ -139,10 +145,10 @@ export default function NavigationMenu() {
                     </div>
                 ) : (
                     <button
-                        onClick={() => setIsLoginOpen(true)}
-                        className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-700 text-white font-bold tracking-wider rounded-full 
-                                       shadow-[0_0_15px_rgba(6,182,212,0.5)] hover:shadow-[0_0_25px_rgba(6,182,212,0.8)]
-                                       hover:scale-110 transition-all duration-300 border border-cyan-400/30">
+                        onClick={() => setLoginOpen(true)}
+                        className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white font-bold tracking-wider rounded-full 
+                                       shadow-[0_0_15px_var(--primary-glow)] hover:shadow-[0_0_25px_var(--primary-glow)]
+                                       hover:scale-110 transition-all duration-300 border border-primary-glow">
                         LOGIN
                     </button>
                 )}
@@ -157,7 +163,7 @@ export default function NavigationMenu() {
                             "p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
                             i === 1 ? "mr-12" : "" // Push middle button outward (Left)
                         )}
-                        animate={{
+                        animate={isLoginOpen ? {} : {
                             y: [0, -10, 0],
                             x: [0, 5, 0]
                         }}
@@ -182,7 +188,7 @@ export default function NavigationMenu() {
                             "p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
                             i === 1 ? "ml-12" : "" // Push middle button outward (Right)
                         )}
-                        animate={{
+                        animate={isLoginOpen ? {} : {
                             y: [0, -12, 0],
                             x: [0, -5, 0]
                         }}
