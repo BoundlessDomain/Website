@@ -80,12 +80,7 @@ export default function NavigationMenu() {
                 ))}
             </div>
 
-            {/* Header Title */}
-            <div className="absolute top-10 left-1/2 -translate-x-1/2 text-center">
-                <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
-                    ROBO-SOLUTIONS
-                </h1>
-            </div>
+
         </div>
     );
 }

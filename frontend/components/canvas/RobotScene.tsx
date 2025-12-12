@@ -34,7 +34,7 @@ export default function RobotScene() {
                     <meshStandardMaterial color="#0f172a" roughness={0.1} metalness={0.8} />
                 </mesh>
 
-                <OrbitControls enableZoom={false} enablePan={false} maxPolarAngle={Math.PI / 2} minPolarAngle={Math.PI / 3} />
+                <OrbitControls enableZoom={false} enablePan={false} enableRotate={false} />
             </Suspense>
         </Canvas>
     );
