@@ -157,20 +157,9 @@ export default function Robot() {
         if (leftShoulderRef.current && leftElbowRef.current) {
             if (mouse.x < -0.1) {
                 // Correct the "direction" logic: 
-                // Left arm (on left side), we want elbow to point Left (away from body).
-                // Theta is angle to mouse. 
-                // If we add alpha, we rotate CCW (Left/Up).
                 const { shoulderAngle, elbowAngle } = solveIK(worldX, worldY, LEFT_SHOULDER_POS, true);
 
-                // Apply interpolations
-                // Note: We add PI/2 to shoulder because our mesh cylinder likely points Y-up by default,
-                // so we need 0 rot to be Down? Actually standard Cylinder is Y-up.
-                // If we rotate Z, we rotate "around" Z axis. 
-                // atan2(y,x): 0 = Right. -PI/2 = Down.
-                // If our Cylinder Geometry center is at 0,0,0, we normally translate it down by half-length.
-                // We want shoulderAngle (radians from X-axis). 
-                // If mesh is vertical (Y-axis), to make it point along angle A, rotZ = A + PI/2.
-
+                // Apply interpolations (Add PI/2 to align Y-up cylinder with X-axis angle)
                 const targetShoulderRot = shoulderAngle + Math.PI / 2;
                 const targetElbowRot = elbowAngle;
 
