@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
+import TopBar from "@/components/ui/TopBar";
 
 export const metadata: Metadata = {
     title: "BobbyYu Website",
@@ -16,6 +17,7 @@ export default function RootLayout({
         <html lang="en" suppressHydrationWarning>
             <body className="antialiased font-sans">
                 <ThemeProvider>
+                    <TopBar />
                     {children}
                 </ThemeProvider>
             </body>

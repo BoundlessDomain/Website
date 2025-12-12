@@ -12,20 +12,20 @@ export default function SettingsMenu() {
     const { theme, setTheme } = useTheme();
 
     return (
-        <div className="relative pointer-events-auto">
+        <div className={clsx("relative pointer-events-auto", isOpen ? "z-50" : "z-auto")}>
             {/* Gear Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={clsx(
-                    "p-3 rounded-full bg-black/40 backdrop-blur-md border border-cyan-500/30",
-                    "hover:bg-cyan-500/20 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.4)]",
+                    "p-3 rounded-full bg-black/40 backdrop-blur-md border border-primary/30",
+                    "hover:bg-primary/20 hover:border-primary hover:shadow-[0_0_15px_var(--primary-glow)]",
                     "transition-all duration-300 group"
                 )}
             >
                 <Settings
                     size={24}
                     className={clsx(
-                        "text-cyan-400 group-hover:text-white transition-colors duration-300",
+                        "text-primary group-hover:text-white transition-colors duration-300",
                         isOpen && "rotate-90 text-white"
                     )}
                 />
@@ -47,7 +47,7 @@ export default function SettingsMenu() {
                             className="absolute top-16 right-0 w-64 p-4 rounded-xl bg-black/95 backdrop-blur-xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden z-[100]"
                         >
                             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-white/10">
-                                <Palette size={16} className="text-cyan-400" />
+                                <Palette size={16} className="text-primary" />
                                 <span className="text-xs font-bold text-white uppercase tracking-widest">System Theme</span>
                             </div>
 

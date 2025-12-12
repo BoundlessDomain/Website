@@ -1,15 +1,10 @@
 "use client";
 
-import { LucideIcon, Home, User, FileText, Utensils, Camera, Feather, BookOpen, LogOut } from "lucide-react";
+import { LucideIcon, FileText, Utensils, Camera, Feather, BookOpen, User } from "lucide-react";
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import LoginModal from "./LoginModal";
-import SettingsMenu from "./SettingsMenu";
-import { supabase } from "@/utils/supabase";
-import { User as SupabaseUser } from "@supabase/supabase-js";
-import { isAdmin } from "@/utils/roles";
 import { useUIStore } from "@/store/uiStore";
 
 interface NavItem {
@@ -30,10 +25,7 @@ const rightItemsFixed: NavItem[] = [
     { label: "ABOUT", icon: User, href: "/about" },
 ];
 
-function getNameFromEmail(email?: string) {
-    if (!email) return "User";
-    return email.split('@')[0];
-}
+
 
 function NavButton({ item, side, onClick }: { item: NavItem, side: 'left' | 'right', onClick: (e: React.MouseEvent) => void }) {
     const isLoginOpen = useUIStore((state) => state.isLoginOpen);
@@ -77,7 +69,6 @@ export default function NavigationMenu() {
     const navState = useUIStore((state) => state.navState);
     const setNavState = useUIStore((state) => state.setNavState);
 
-    const [user, setUser] = useState<SupabaseUser | null>(null);
     const [activeItem, setActiveItem] = useState<NavItem | null>(null);
 
     const handleNavClick = async (e: React.MouseEvent, item: NavItem) => {
@@ -108,87 +99,10 @@ export default function NavigationMenu() {
         }, 1400);
     };
 
-    useEffect(() => {
-        // Get initial user
-        supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
 
-        // Listen for changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
-
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-    };
 
     return (
         <div className="absolute inset-0 z-50 pointer-events-none flex justify-between items-center px-20">
-            {/* Login Modal */}
-            <LoginModal isOpen={isLoginOpen} onClose={() => setLoginOpen(false)} />
-
-            {/* Home Button - Top Left (Replaces Logo) */}
-            <div className="absolute top-8 left-8 pointer-events-auto">
-                <a href="/" className="flex items-center justify-center w-16 h-16 rounded-full border-2 border-primary-glow bg-glass backdrop-blur-md
-                                     hover:border-primary hover:shadow-[0_0_20px_var(--primary-glow)] transition-all duration-300 group">
-                    <Home className="w-8 h-8 text-primary-text group-hover:text-white transition-colors" />
-                </a>
-            </div>
-
-            {/* Login/Profile - Top Right */}
-            <div className="absolute top-8 right-8 pointer-events-auto flex items-center gap-4">
-                {/* Settings Menu - Always Accessible */}
-                <SettingsMenu />
-
-                {user ? (
-                    <div className="flex items-center gap-4">
-                        {/* Greeting */}
-                        <div className="flex flex-col items-end mr-2 hidden md:flex">
-                            <span className="text-primary-text font-bold tracking-wider text-sm drop-shadow-[0_0_5px_var(--primary-glow)]">
-                                Hello, {user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.username || getNameFromEmail(user.email)}
-                            </span>
-                            {isAdmin(user.email) && (
-                                <span className="text-[10px] bg-red-600/20 text-red-400 border border-red-500/50 px-2 py-0.5 rounded-full font-bold tracking-widest mt-1 shadow-[0_0_10px_rgba(220,38,38,0.4)]">
-                                    OWNER ACCESS
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Profile Circle */}
-                        <div className="w-16 h-16 rounded-full border-2 border-primary bg-glass backdrop-blur-md overflow-hidden relative shadow-[0_0_15px_var(--primary-glow)] group">
-                            {user.user_metadata?.avatar_url ? (
-                                <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-secondary-dark">
-                                    <span className="text-primary-text font-bold text-xl uppercase">
-                                        {user.user_metadata?.username?.[0] || user.email?.[0] || "U"}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Logout Mini Button */}
-                        <button
-                            onClick={handleLogout}
-                            className="p-3 rounded-full bg-red-900/20 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition-all"
-                            title="Disconnect System"
-                        >
-                            <LogOut size={20} />
-                        </button>
-                    </div>
-                ) : (
-                    <button
-                        onClick={() => setLoginOpen(true)}
-                        className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white font-bold tracking-wider rounded-full 
-                                       shadow-[0_0_15px_var(--primary-glow)] hover:shadow-[0_0_25px_var(--primary-glow)]
-                                       hover:scale-110 transition-all duration-300 border border-primary-glow">
-                        LOGIN
-                    </button>
-                )}
-            </div>
-
             {/* Left Menu Items - Individual Floating Windows */}
             <div className="flex flex-col gap-6 items-end">
                 {leftItems.map((item, i) => (
