@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Mesh, Group, Vector3 } from "three";
 import * as THREE from "three";
+import { useUIStore } from "@/store/uiStore";
 
 // Helper for smooth angle interpolation (shortest path)
 const lerpAngle = (start: number, end: number, t: number) => {
@@ -35,6 +36,8 @@ export default function Robot() {
     // Shoulder Local Positions (relative to Robot Root)
     const LEFT_SHOULDER_POS = new Vector3(-0.9, 2.2, 0);
     const RIGHT_SHOULDER_POS = new Vector3(0.9, 2.2, 0);
+    const navState = useUIStore((state) => state.navState);
+    const isLoginOpen = useUIStore((state) => state.isLoginOpen);
 
     const { viewport } = useThree();
 
@@ -138,26 +141,72 @@ export default function Robot() {
     const targetVector = new Vector3();
 
     useFrame((state) => {
+        // Paused if login is open (and not navigating)
+        if (isLoginOpen && navState === 'idle') return;
+
+        let targetX = state.mouse.x;
+        let targetY = state.mouse.y;
+
+        // --- ANIMATION OVERRIDE ---
+        if (navState === 'grabbing') {
+            // Hands move to center of screen (holding the card sides)
+            // World Center is roughly (0, 0)
+            // Left Hand -> (-2, 0)
+            // Right Hand -> (2, 0)
+            // Head looks at center
+
+            // We'll lerp the stored "mouse" values effectively 
+            // BUT our IK loop uses `targetVector` from raycast.
+            // Let's override worldX/worldY directly.
+        }
+
         const mouse = state.mouse;
 
         // Use Raycaster to find the point on the Z=0 plane
         raycaster.setFromCamera(mouse, state.camera);
         raycaster.ray.intersectPlane(plane, targetVector);
 
-        const worldX = targetVector.x;
-        const worldY = targetVector.y;
+        let worldX = targetVector.x;
+        let worldY = targetVector.y;
+
+        // OVERRIDE FOR ANIMATION
+        if (navState === 'grabbing') {
+            worldX = 0;
+            worldY = 0; // Look at center
+            // Actual Hand Targets handled locally below?
+            // No, the IK loop uses mouse.x/y for specific arm logic.
+            // Let's force "activation" of both arms.
+        } else if (navState === 'expanding') {
+            worldX = 0;
+            worldY = 0;
+        }
 
         // --- HEAD TRACKING ---
         if (headRef.current) {
-            headRef.current.rotation.y = THREE.MathUtils.lerp(headRef.current.rotation.y, mouse.x * 0.6, 0.1);
-            headRef.current.rotation.x = THREE.MathUtils.lerp(headRef.current.rotation.x, -mouse.y * 0.5, 0.1);
+            const targetHeadX = (navState !== 'idle') ? 0 : mouse.x * 0.6;
+            const targetHeadY = (navState !== 'idle') ? 0 : -mouse.y * 0.5;
+
+            headRef.current.rotation.y = THREE.MathUtils.lerp(headRef.current.rotation.y, targetHeadX, 0.1);
+            headRef.current.rotation.x = THREE.MathUtils.lerp(headRef.current.rotation.x, targetHeadY, 0.1);
         }
 
         // --- LEFT ARM IK ---
         if (leftShoulderRef.current && leftElbowRef.current) {
-            if (mouse.x < -0.1) {
+            // Activate if mouse is on left OR if animating
+            if (mouse.x < -0.1 || navState !== 'idle') {
+                let ikTargetX = worldX;
+                let ikTargetY = worldY;
+
+                if (navState === 'grabbing') {
+                    ikTargetX = -1.2; // Hold Left Side of Card
+                    ikTargetY = 0;    // Center Height
+                } else if (navState === 'expanding') {
+                    ikTargetX = -6.0; // Push Outwards
+                    ikTargetY = 0;
+                }
+
                 // Correct the "direction" logic: 
-                const { shoulderAngle, elbowAngle } = solveIK(worldX, worldY, LEFT_SHOULDER_POS, true);
+                const { shoulderAngle, elbowAngle } = solveIK(ikTargetX, ikTargetY, LEFT_SHOULDER_POS, true);
 
                 // Apply interpolations (Add PI/2 to align Y-up cylinder with X-axis angle)
                 const targetShoulderRot = shoulderAngle + Math.PI / 2;
@@ -174,8 +223,20 @@ export default function Robot() {
 
         // --- RIGHT ARM IK ---
         if (rightShoulderRef.current && rightElbowRef.current) {
-            if (mouse.x > 0.1) {
-                const { shoulderAngle, elbowAngle } = solveIK(worldX, worldY, RIGHT_SHOULDER_POS, false);
+            // Activate if mouse is on right OR if animating
+            if (mouse.x > 0.1 || navState !== 'idle') {
+                let ikTargetX = worldX;
+                let ikTargetY = worldY;
+
+                if (navState === 'grabbing') {
+                    ikTargetX = 1.2; // Hold Right Side of Card
+                    ikTargetY = 0;
+                } else if (navState === 'expanding') {
+                    ikTargetX = 6.0; // Push Outwards
+                    ikTargetY = 0;
+                }
+
+                const { shoulderAngle, elbowAngle } = solveIK(ikTargetX, ikTargetY, RIGHT_SHOULDER_POS, false);
 
                 const targetShoulderRot = shoulderAngle + Math.PI / 2;
                 const targetElbowRot = elbowAngle;
@@ -187,6 +248,13 @@ export default function Robot() {
                 rightShoulderRef.current.rotation.z = lerpAngle(rightShoulderRef.current.rotation.z, 0, 0.1);
                 rightElbowRef.current.rotation.z = lerpAngle(rightElbowRef.current.rotation.z, 0, 0.1);
             }
+        }
+
+        // Eyes follow center during animation
+        if (navState !== 'idle') {
+            if (leftEyeRef.current) leftEyeRef.current.lookAt(0, 0, 5);
+            if (rightEyeRef.current) rightEyeRef.current.lookAt(0, 0, 5);
+            return; // Skip normal eye tracking
         }
 
         // --- EYE TRACKING ---
