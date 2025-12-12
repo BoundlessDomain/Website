@@ -2,6 +2,7 @@
 
 import { LucideIcon, Home, User, Briefcase, FileText, Mail, Wrench } from "lucide-react";
 import clsx from "clsx";
+import { motion } from "framer-motion";
 
 interface NavItem {
     label: string;
@@ -15,33 +16,21 @@ const leftItems: NavItem[] = [
     { label: "ABOUT", icon: User, href: "/about" },
 ];
 
-const rightItems: NavItem[] = [
-    { label: "ABOUT", icon: User, href: "/about-2" }, // Kept as requested in image, presumably Portfolio/About split
-    { label: "PORTFOLIO", icon: Briefcase, href: "/portfolio" },
-    { label: "BLOG", icon: FileText, href: "/blog" },
-    { label: "CONTACT", icon: Mail, href: "/contact" },
-];
-
-// Cleaned up list based on typical usage (User requested "About, Portfolio, Blog, Contact" on right)
-// The image showed 4 circles on right? Let's stick to the 3v3 symmetry from the text description unless specified.
-// Text said: "3 Circular Buttons on left, 3 on right."
-// Let's adjust rightItems to match 3.
 const rightItemsFixed: NavItem[] = [
     { label: "PORTFOLIO", icon: Briefcase, href: "/portfolio" },
     { label: "BLOG", icon: FileText, href: "/blog" },
     { label: "CONTACT", icon: Mail, href: "/contact" },
 ];
 
-
 function NavButton({ item, side }: { item: NavItem, side: 'left' | 'right' }) {
     return (
         <a href={item.href} className={clsx(
-            "group relative flex items-center gap-4 p-4 transition-all duration-300 hover:scale-110",
+            "group relative flex items-center gap-4 p-2 transition-all duration-300 hover:scale-105",
             side === 'left' ? "flex-row-reverse text-right" : "flex-row text-left"
         )}>
             {/* Text Label */}
             <span className={clsx(
-                "text-cyan-400 font-bold tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+                "text-cyan-400 font-bold tracking-widest transition-opacity duration-300",
                 "text-lg shadow-cyan-500/50 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]"
             )}>
                 {item.label}
@@ -54,9 +43,9 @@ function NavButton({ item, side }: { item: NavItem, side: 'left' | 'right' }) {
                 <item.icon className="w-8 h-8 text-cyan-400 group-hover:text-white transition-colors" />
             </div>
 
-            {/* Connecting Line (Decorative) */}
+            {/* Connecting Line (Decorative) - Moved to be "under" text */}
             <div className={clsx(
-                "absolute top-1/2 w-12 h-[2px] bg-cyan-900 -z-10 group-hover:bg-cyan-500 transition-colors",
+                "absolute bottom-0 w-12 h-[2px] bg-cyan-900 -z-10 group-hover:bg-cyan-500 transition-colors",
                 side === 'left' ? "right-10 translate-x-full" : "left-10 -translate-x-full"
             )} />
         </a>
@@ -66,21 +55,63 @@ function NavButton({ item, side }: { item: NavItem, side: 'left' | 'right' }) {
 export default function NavigationMenu() {
     return (
         <div className="absolute inset-0 z-50 pointer-events-none flex justify-between items-center px-20">
-            {/* Left Menu */}
-            <div className="flex flex-col gap-12 pointer-events-auto">
+            {/* Logo - Top Left */}
+            <div className="absolute top-8 left-8 pointer-events-auto">
+                <img src="/logo.png" alt="Logo" className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(6,182,212,0.5)]" />
+            </div>
+
+            {/* Login Button - Top Right */}
+            <div className="absolute top-8 right-8 pointer-events-auto">
+                <button className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-700 text-white font-bold tracking-wider rounded-full 
+                                   shadow-[0_0_15px_rgba(6,182,212,0.5)] hover:shadow-[0_0_25px_rgba(6,182,212,0.8)]
+                                   hover:scale-110 transition-all duration-300 border border-cyan-400/30">
+                    LOGIN
+                </button>
+            </div>
+
+            {/* Left Menu Items - Individual Floating Windows */}
+            <div className="flex flex-col gap-6">
                 {leftItems.map((item, i) => (
-                    <NavButton key={i} item={item} side="left" />
+                    <motion.div
+                        key={i}
+                        className="p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto"
+                        animate={{
+                            y: [0, -10, 0],
+                            x: [0, 5, 0]
+                        }}
+                        transition={{
+                            repeat: Infinity,
+                            duration: 5 + i, // Different duration for each
+                            ease: "easeInOut",
+                            delay: i * 0.5 // Staggered start
+                        }}
+                    >
+                        <NavButton item={item} side="left" />
+                    </motion.div>
                 ))}
             </div>
 
-            {/* Right Menu */}
-            <div className="flex flex-col gap-12 pointer-events-auto">
+            {/* Right Menu Items - Individual Floating Windows */}
+            <div className="flex flex-col gap-6">
                 {rightItemsFixed.map((item, i) => (
-                    <NavButton key={i} item={item} side="right" />
+                    <motion.div
+                        key={i}
+                        className="p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto"
+                        animate={{
+                            y: [0, -12, 0],
+                            x: [0, -5, 0]
+                        }}
+                        transition={{
+                            repeat: Infinity,
+                            duration: 6 + i, // Different duration for each
+                            ease: "easeInOut",
+                            delay: i * 0.7 // Different stagger
+                        }}
+                    >
+                        <NavButton item={item} side="right" />
+                    </motion.div>
                 ))}
             </div>
-
-
         </div>
     );
 }

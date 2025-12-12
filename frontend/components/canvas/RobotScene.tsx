@@ -12,13 +12,24 @@ if (typeof window !== "undefined") {
 }
 
 import { Canvas } from "@react-three/fiber";
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { OrbitControls } from "@react-three/drei";
 import Robot from "./Robot";
 
 export default function RobotScene() {
+    const [eventSource, setEventSource] = useState<HTMLElement | undefined>(undefined);
+
+    useEffect(() => {
+        setEventSource(document.body);
+    }, []);
+
     return (
-        <Canvas camera={{ position: [0, 1, 6], fov: 45 }} shadows>
+        <Canvas
+            camera={{ position: [0, 1, 6], fov: 45 }}
+            shadows
+            eventSource={eventSource}
+            eventPrefix="client"
+        >
             <Suspense fallback={null}>
                 {/* Lighting for Cyberpunk feel */}
                 <ambientLight intensity={0.2} />
