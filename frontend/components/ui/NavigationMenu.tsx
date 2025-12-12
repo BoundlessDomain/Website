@@ -5,8 +5,10 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import LoginModal from "./LoginModal";
+import SettingsMenu from "./SettingsMenu";
 import { supabase } from "@/utils/supabase";
 import { User as SupabaseUser } from "@supabase/supabase-js";
+import { isAdmin } from "@/utils/roles";
 
 interface NavItem {
     label: string;
@@ -99,9 +101,19 @@ export default function NavigationMenu() {
                 {user ? (
                     <div className="flex items-center gap-4">
                         {/* Greeting */}
-                        <span className="text-cyan-400 font-bold tracking-wider text-sm mr-2 hidden md:block shadow-cyan-500/50 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">
-                            Hello, {user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.username || getNameFromEmail(user.email)}
-                        </span>
+                        <div className="flex flex-col items-end mr-2 hidden md:flex">
+                            <span className="text-cyan-400 font-bold tracking-wider text-sm shadow-cyan-500/50 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">
+                                Hello, {user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.username || getNameFromEmail(user.email)}
+                            </span>
+                            {isAdmin(user.email) && (
+                                <span className="text-[10px] bg-red-600/20 text-red-400 border border-red-500/50 px-2 py-0.5 rounded-full font-bold tracking-widest mt-1 shadow-[0_0_10px_rgba(220,38,38,0.4)]">
+                                    OWNER ACCESS
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Settings Menu */}
+                        <SettingsMenu />
 
                         {/* Profile Circle */}
                         <div className="w-16 h-16 rounded-full border-2 border-cyan-500 bg-black/40 backdrop-blur-md overflow-hidden relative shadow-[0_0_15px_rgba(6,182,212,0.5)] group">

@@ -12,13 +12,13 @@ const config: Config = {
                 background: "var(--background)",
                 foreground: "var(--foreground)",
                 primary: {
-                    DEFAULT: "#06b6d4",
-                    glow: "rgba(6,182,212,0.5)",
-                    text: "#22d3ee",
+                    DEFAULT: "var(--primary)",
+                    glow: "var(--primary-glow)",
+                    text: "var(--primary-text)",
                 },
                 secondary: {
-                    DEFAULT: "#3b82f6",
-                    dark: "#1d4ed8",
+                    DEFAULT: "var(--secondary)",
+                    dark: "var(--secondary-dark)",
                 },
                 glass: "rgba(0, 0, 0, 0.4)",
             },
