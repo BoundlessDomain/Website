@@ -25,12 +25,12 @@ const rightItemsFixed: NavItem[] = [
 function NavButton({ item, side }: { item: NavItem, side: 'left' | 'right' }) {
     return (
         <a href={item.href} className={clsx(
-            "group relative flex items-center gap-4 p-2 transition-all duration-300 hover:scale-105",
+            "group relative flex items-center justify-between gap-4 p-2 w-72 transition-all duration-300 hover:scale-105",
             side === 'left' ? "flex-row-reverse text-right" : "flex-row text-left"
         )}>
             {/* Text Label */}
             <span className={clsx(
-                "text-cyan-400 font-bold tracking-widest transition-opacity duration-300",
+                "text-cyan-400 font-bold tracking-widest transition-opacity duration-300 whitespace-nowrap",
                 "text-lg shadow-cyan-500/50 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]"
             )}>
                 {item.label}
@@ -70,11 +70,14 @@ export default function NavigationMenu() {
             </div>
 
             {/* Left Menu Items - Individual Floating Windows */}
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6 items-end">
                 {leftItems.map((item, i) => (
                     <motion.div
                         key={i}
-                        className="p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto"
+                        className={clsx(
+                            "p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
+                            i === 1 ? "mr-12" : "" // Push middle button outward (Left)
+                        )}
                         animate={{
                             y: [0, -10, 0],
                             x: [0, 5, 0]
@@ -92,11 +95,14 @@ export default function NavigationMenu() {
             </div>
 
             {/* Right Menu Items - Individual Floating Windows */}
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6 items-start">
                 {rightItemsFixed.map((item, i) => (
                     <motion.div
                         key={i}
-                        className="p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto"
+                        className={clsx(
+                            "p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
+                            i === 1 ? "ml-12" : "" // Push middle button outward (Right)
+                        )}
                         animate={{
                             y: [0, -12, 0],
                             x: [0, -5, 0]
