@@ -35,7 +35,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         setFullName("");
     };
 
-    const handleSocialLogin = async (provider: 'google' | 'linkedin') => {
+    const handleSocialLogin = async (provider: 'google' | 'linkedin_oidc') => {
         setIsLoading(true);
         setError(null);
         const { error } = await supabase.auth.signInWithOAuth({
@@ -110,9 +110,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
                         className="fixed inset-0 z-[70] flex items-center justify-center pointer-events-none"
                     >
-                        <div className="w-full max-w-md p-8 rounded-2xl bg-black/95 border border-cyan-500/30 shadow-[0_0_50px_rgba(6,182,212,0.3)] pointer-events-auto relative overflow-hidden flex flex-col min-h-[500px]">
+                        <div className="w-full max-w-md p-8 rounded-2xl bg-black/95 border border-primary/30 shadow-[0_0_50px_var(--primary-glow)] pointer-events-auto relative overflow-hidden flex flex-col min-h-[500px]">
                             {/* Decorative Top Line */}
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
 
                             {/* Header */}
                             <div className="flex justify-between items-center mb-8">
@@ -123,12 +123,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                                         </button>
                                     )}
                                     <h2 className="text-2xl font-bold text-white tracking-widest">
-                                        {view === 'login' && <>SYSTEM <span className="text-cyan-400">ACCESS</span></>}
-                                        {view === 'signup' && <>NEW <span className="text-cyan-400">IDENTITY</span></>}
-                                        {view === 'recovery' && <>RECOVER <span className="text-cyan-400">KEY</span></>}
+                                        {view === 'login' && <>SYSTEM <span className="text-primary">ACCESS</span></>}
+                                        {view === 'signup' && <>NEW <span className="text-primary">IDENTITY</span></>}
+                                        {view === 'recovery' && <>RECOVER <span className="text-primary">KEY</span></>}
                                     </h2>
                                 </div>
-                                <button onClick={handleClose} className="text-white/50 hover:text-white transition-colors">
+                                <button onClick={handleClose} className="text-white/50 hover:text-primary transition-colors">
                                     <X size={24} />
                                 </button>
                             </div>
@@ -154,27 +154,27 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                                 {view === 'signup' && (
                                     <>
                                         <div className="space-y-2">
-                                            <label className="text-xs uppercase tracking-widest text-cyan-400 font-bold ml-1">Full Name</label>
+                                            <label className="text-xs uppercase tracking-widest text-primary font-bold ml-1">Full Name</label>
                                             <div className="relative group">
-                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-500/50 group-focus-within:text-cyan-400 transition-colors" size={20} />
+                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/50 group-focus-within:text-primary transition-colors" size={20} />
                                                 <input
                                                     type="text"
                                                     value={fullName}
                                                     onChange={(e) => setFullName(e.target.value)}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-cyan-500 focus:bg-white/10 transition-all placeholder:text-white/20"
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary focus:bg-white/10 transition-all placeholder:text-white/20"
                                                     placeholder="John Doe"
                                                 />
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs uppercase tracking-widest text-cyan-400 font-bold ml-1">Username</label>
+                                            <label className="text-xs uppercase tracking-widest text-primary font-bold ml-1">Username</label>
                                             <div className="relative group">
-                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-500/50 group-focus-within:text-cyan-400 transition-colors" size={20} />
+                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/50 group-focus-within:text-primary transition-colors" size={20} />
                                                 <input
                                                     type="text"
                                                     value={username}
                                                     onChange={(e) => setUsername(e.target.value)}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-cyan-500 focus:bg-white/10 transition-all placeholder:text-white/20"
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary focus:bg-white/10 transition-all placeholder:text-white/20"
                                                     placeholder="CyberPunk99"
                                                 />
                                             </div>
@@ -184,16 +184,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
                                 {/* Email/User Field (All Views) */}
                                 <div className="space-y-2">
-                                    <label className="text-xs uppercase tracking-widest text-cyan-400 font-bold ml-1">
+                                    <label className="text-xs uppercase tracking-widest text-primary font-bold ml-1">
                                         Email Address
                                     </label>
                                     <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-500/50 group-focus-within:text-cyan-400 transition-colors" size={20} />
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/50 group-focus-within:text-primary transition-colors" size={20} />
                                         <input
                                             type="email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-cyan-500 focus:bg-white/10 transition-all placeholder:text-white/20"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary focus:bg-white/10 transition-all placeholder:text-white/20"
                                             placeholder={view === 'recovery' ? "Enter recovery email..." : "user@example.com"}
                                         />
                                     </div>
@@ -202,14 +202,14 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                                 {/* Password Field (Login/Signup Only) */}
                                 {view !== 'recovery' && (
                                     <div className="space-y-2">
-                                        <label className="text-xs uppercase tracking-widest text-cyan-400 font-bold ml-1">Password</label>
+                                        <label className="text-xs uppercase tracking-widest text-primary font-bold ml-1">Password</label>
                                         <div className="relative group">
-                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-500/50 group-focus-within:text-cyan-400 transition-colors" size={20} />
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/50 group-focus-within:text-primary transition-colors" size={20} />
                                             <input
                                                 type="password"
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-cyan-500 focus:bg-white/10 transition-all placeholder:text-white/20"
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary focus:bg-white/10 transition-all placeholder:text-white/20"
                                                 placeholder="••••••••"
                                             />
                                         </div>
@@ -219,8 +219,8 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                                 {/* Main Action Button */}
                                 <button
                                     disabled={isLoading}
-                                    className="mt-2 w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-700 text-white font-bold tracking-widest rounded-xl 
-                                             shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)]
+                                    className="mt-2 w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold tracking-widest rounded-xl 
+                                             shadow-[0_0_20px_var(--primary-glow)] hover:shadow-[0_0_30px_var(--primary-glow)]
                                              hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden"
                                 >
                                     <span className="relative z-10">
@@ -248,15 +248,15 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                                             onClick={() => handleSocialLogin('google')}
                                             className="flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
                                         >
-                                            <Chrome className="text-white/60 group-hover:text-cyan-400 transition-colors" size={18} />
+                                            <Chrome className="text-white/60 group-hover:text-primary transition-colors" size={18} />
                                             <span className="text-sm font-bold text-white/80">Google</span>
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => handleSocialLogin('linkedin')}
+                                            onClick={() => handleSocialLogin('linkedin_oidc')}
                                             className="flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
                                         >
-                                            <Linkedin className="text-white/60 group-hover:text-cyan-400 transition-colors" size={18} />
+                                            <Linkedin className="text-white/60 group-hover:text-primary transition-colors" size={18} />
                                             <span className="text-sm font-bold text-white/80">LinkedIn</span>
                                         </button>
                                     </div>
@@ -266,10 +266,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             {/* Footer Links (Login View Only) */}
                             {view === 'login' && (
                                 <div className="mt-8 flex justify-between text-xs">
-                                    <button onClick={() => setView('signup')} className="text-white/40 hover:text-cyan-400 transition-colors uppercase tracking-wider">
+                                    <button onClick={() => setView('signup')} className="text-white/40 hover:text-primary transition-colors uppercase tracking-wider">
                                         Initialize Access
                                     </button>
-                                    <button onClick={() => setView('recovery')} className="text-white/40 hover:text-cyan-400 transition-colors uppercase tracking-wider">
+                                    <button onClick={() => setView('recovery')} className="text-white/40 hover:text-primary transition-colors uppercase tracking-wider">
                                         Recover Key
                                     </button>
                                 </div>
@@ -279,7 +279,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             {view === 'signup' && (
                                 <div className="mt-8 text-center text-xs">
                                     <span className="text-white/40">Already have an ID? </span>
-                                    <button onClick={() => setView('login')} className="text-cyan-400 hover:text-cyan-300 font-bold ml-1">
+                                    <button onClick={() => setView('login')} className="text-primary hover:text-white font-bold ml-1">
                                         SYSTEM LOGIN
                                     </button>
                                 </div>

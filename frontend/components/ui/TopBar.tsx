@@ -37,16 +37,26 @@ export default function TopBar() {
     };
 
     return (
-        <div className="fixed top-0 left-0 w-full z-50 pointer-events-none flex justify-between items-center px-6 py-6 md:px-12 md:py-8">
+        <div className="fixed top-0 left-0 w-full z-[60] pointer-events-none flex justify-between items-center px-6 py-6 md:px-12 md:py-8">
             {/* Login Modal */}
             <LoginModal isOpen={isLoginOpen} onClose={() => setLoginOpen(false)} />
 
             {/* Home Button - Top Left */}
             <div className="pointer-events-auto">
-                <a href="/" className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary-glow bg-glass backdrop-blur-md
-                                     hover:border-primary hover:shadow-[0_0_20px_var(--primary-glow)] transition-all duration-300 group">
+                <button
+                    onClick={() => {
+                        // If we are on home, simple reload/do nothing. If subpage, trigger exit.
+                        if (window.location.pathname !== "/") {
+                            useUIStore.getState().setIsExiting(true);
+                        } else {
+                            window.location.reload();
+                        }
+                    }}
+                    className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary-glow bg-glass backdrop-blur-md
+                                     hover:border-primary hover:shadow-[0_0_20px_var(--primary-glow)] transition-all duration-300 group"
+                >
                     <Home className="w-6 h-6 text-primary-text group-hover:text-white transition-colors" />
-                </a>
+                </button>
             </div>
 
             {/* Login/Profile - Top Right */}

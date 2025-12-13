@@ -3,7 +3,7 @@
 import { LucideIcon, FileText, Utensils, Camera, Feather, BookOpen, User } from "lucide-react";
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUIStore } from "@/store/uiStore";
 
@@ -69,6 +69,9 @@ export default function NavigationMenu() {
     const navState = useUIStore((state) => state.navState);
     const setNavState = useUIStore((state) => state.setNavState);
 
+    const returningLabel = useUIStore((state) => state.returningLabel);
+    const setReturningLabel = useUIStore((state) => state.setReturningLabel);
+
     const [activeItem, setActiveItem] = useState<NavItem | null>(null);
 
     const handleNavClick = async (e: React.MouseEvent, item: NavItem) => {
@@ -99,10 +102,34 @@ export default function NavigationMenu() {
         }, 1400);
     };
 
+    // Handle "Returning" Animation from Subpage
+    useEffect(() => {
+        if (returningLabel) {
+            // Find the item that corresponds to the returning label
+            const allItems = [...leftItems, ...rightItemsFixed];
+            const item = allItems.find(i => i.label === returningLabel);
+
+            if (item) {
+                // Instantly set state to "Grabbing" (Window at Center)
+                setActiveItem(item);
+                setNavState('grabbing');
+
+                // After a brief pause, "Put it back" (Animate to Idle)
+                setTimeout(() => {
+                    setNavState('idle');
+                    setActiveItem(null);
+                    setReturningLabel(null); // Clear flag
+                }, 800);
+            } else {
+                setReturningLabel(null);
+            }
+        }
+    }, [returningLabel, setNavState, setReturningLabel]);
+
 
 
     return (
-        <div className="absolute inset-0 z-50 pointer-events-none flex justify-between items-center px-20">
+        <div className="absolute inset-0 z-40 pointer-events-none flex justify-between items-center px-20">
             {/* Left Menu Items - Individual Floating Windows */}
             <div className="flex flex-col gap-6 items-end">
                 {leftItems.map((item, i) => (
