@@ -14,7 +14,9 @@ interface PageTransitionProps {
 export default function PageTransition({ icon: Icon, title, children, quadrant = 'top-left' }: PageTransitionProps) {
     const router = useRouter();
     const isExiting = useUIStore((state) => state.isExiting);
+    // const setIsExiting = useUIStore((state) => state.setIsExiting); // This was missing in replacing block, ensure we keep what we need
     const setIsExiting = useUIStore((state) => state.setIsExiting);
+    const isLowPowerMode = useUIStore((state) => state.isLowPowerMode); // Added
 
     // Initial State: Centered and Scaled Up (Entry)
     // Target State: Top Left Standard Header
@@ -44,14 +46,16 @@ export default function PageTransition({ icon: Icon, title, children, quadrant =
             // Animation is handled by the variants below.
             // We just wait for it to visually finish before redirecting.
             // Duration is 0.8s, so we wait 800ms.
+            // Low Power Mode: Instant redirect delay
+            const delay = isLowPowerMode ? 0 : 800;
             const timer = setTimeout(() => {
                 router.push("/");
                 // Reset flag after a delay to ensure next nav is clean
                 setTimeout(() => setIsExiting(false), 500);
-            }, 800);
+            }, delay);
             return () => clearTimeout(timer);
         }
-    }, [isExiting, router, setIsExiting]);
+    }, [isExiting, router, setIsExiting, isLowPowerMode]);
 
     return (
         <div className="min-h-screen w-full relative overflow-hidden pt-32 px-8 flex flex-col items-center">
@@ -88,7 +92,7 @@ export default function PageTransition({ icon: Icon, title, children, quadrant =
                     opacity: 1
                 }}
                 transition={{
-                    duration: 0.8,
+                    duration: isLowPowerMode ? 0 : 0.8,
                     ease: [0.16, 1, 0.3, 1]
                 }}
                 className="flex items-center gap-4 z-10"
@@ -103,7 +107,7 @@ export default function PageTransition({ icon: Icon, title, children, quadrant =
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={isExiting ? { opacity: 0, y: 50 } : { opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: isExiting ? 0 : 0.8 }}
+                transition={{ duration: isLowPowerMode ? 0 : 0.5, delay: (isExiting || isLowPowerMode) ? 0 : 0.8 }}
                 className="w-full max-w-4xl mt-32"
             >
                 {children}

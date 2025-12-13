@@ -41,7 +41,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: provider,
             options: {
-                redirectTo: `${window.location.href}`,
+                redirectTo: `${window.location.origin}`,
             }
         });
         if (error) setError(error.message);

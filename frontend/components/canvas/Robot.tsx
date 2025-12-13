@@ -1,8 +1,7 @@
-"use client";
-
-import { useRef } from "react";
+import { useRef, useState, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Mesh, Group, Vector3 } from "three";
+import { Text } from "@react-three/drei";
 import * as THREE from "three";
 import { useUIStore } from "@/store/uiStore";
 
@@ -13,14 +12,60 @@ const lerpAngle = (start: number, end: number, t: number) => {
     return start + shortestDiff * t;
 };
 
+// --- Zzz PARTICLE SYSTEM ---
+function ZzzParticles() {
+    // Static Zs for Low Power Mode (No Animation)
+    return (
+        <group>
+            <Text
+                position={[0.5, 3.5, 0]}
+                fontSize={0.4}
+                color="white"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={0.05}
+                outlineColor="#a855f7"
+            >
+                Z
+            </Text>
+            <Text
+                position={[1.2, 4.2, 0]}
+                fontSize={0.6}
+                color="white"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={0.05}
+                outlineColor="#a855f7"
+            >
+                Z
+            </Text>
+            <Text
+                position={[2.0, 5.0, 0]}
+                fontSize={0.8}
+                color="white"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={0.05}
+                outlineColor="#a855f7"
+            >
+                Z
+            </Text>
+        </group>
+    );
+}
+
 export default function Robot() {
     const headRef = useRef<Group>(null);
     const leftShoulderRef = useRef<Group>(null);
     const leftElbowRef = useRef<Group>(null);
     const rightShoulderRef = useRef<Group>(null);
     const rightElbowRef = useRef<Group>(null);
+
+    // Eye & Pupil Refs (Independent control)
     const leftEyeRef = useRef<Mesh>(null);
     const rightEyeRef = useRef<Mesh>(null);
+    const leftPupilRef = useRef<Mesh>(null);
+    const rightPupilRef = useRef<Mesh>(null);
 
     // IK Parameters
     const UPPER_ARM_LENGTH = 1.0;
@@ -38,6 +83,7 @@ export default function Robot() {
     const RIGHT_SHOULDER_POS = new Vector3(0.9, 2.2, 0);
     const navState = useUIStore((state) => state.navState);
     const isLoginOpen = useUIStore((state) => state.isLoginOpen);
+    const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
 
     const { viewport } = useThree();
 
@@ -141,8 +187,52 @@ export default function Robot() {
     const targetVector = new Vector3();
 
     useFrame((state) => {
+        // --- LOW POWER MODE CHECK ---
+        // If Low Power Mode is ON, skip all IK calculations and animations.
+        // VISUAL: Enter Sleep Pose (Head Down, Eyes Closed, Arms Relaxed)
+        if (useUIStore.getState().isLowPowerMode) {
+            // Smoothly lerp to sleep pose so it doesn't snap if toggled live
+            const dt = 0.1;
+
+            // Head: Look Down
+            if (headRef.current) {
+                headRef.current.rotation.x = THREE.MathUtils.lerp(headRef.current.rotation.x, 0.5, dt); // Look down
+                headRef.current.rotation.y = THREE.MathUtils.lerp(headRef.current.rotation.y, 0, dt);   // Center
+            }
+
+            // Eyes: "Close" (Squash Y scale)
+            if (leftEyeRef.current) leftEyeRef.current.scale.y = THREE.MathUtils.lerp(leftEyeRef.current.scale.y, 0.05, dt);
+            if (rightEyeRef.current) rightEyeRef.current.scale.y = THREE.MathUtils.lerp(rightEyeRef.current.scale.y, 0.05, dt);
+
+            // HIDE PUPILS when sleeping
+            if (leftPupilRef.current) leftPupilRef.current.visible = false;
+            if (rightPupilRef.current) rightPupilRef.current.visible = false;
+
+            // Arms: Relax sides (Shoulders rot Z ~0, Elbows ~0)
+            if (leftShoulderRef.current) leftShoulderRef.current.rotation.z = lerpAngle(leftShoulderRef.current.rotation.z, 0, dt);
+            if (leftElbowRef.current) leftElbowRef.current.rotation.z = lerpAngle(leftElbowRef.current.rotation.z, 0, dt);
+
+            if (rightShoulderRef.current) rightShoulderRef.current.rotation.z = lerpAngle(rightShoulderRef.current.rotation.z, 0, dt);
+            if (rightElbowRef.current) rightElbowRef.current.rotation.z = lerpAngle(rightElbowRef.current.rotation.z, 0, dt);
+
+            return;
+        }
+
+        // WAKE UP: Restore Eye Scale and Visibility
+        if (leftPupilRef.current) leftPupilRef.current.visible = true;
+        if (rightPupilRef.current) rightPupilRef.current.visible = true;
+
+        if (leftEyeRef.current && leftEyeRef.current.scale.y < 0.9) leftEyeRef.current.scale.y = THREE.MathUtils.lerp(leftEyeRef.current.scale.y, 1, 0.1);
+        if (rightEyeRef.current && rightEyeRef.current.scale.y < 0.9) rightEyeRef.current.scale.y = THREE.MathUtils.lerp(rightEyeRef.current.scale.y, 1, 0.1);
+
+        // Skip animation if login is open to save resources (and prevent occlusion)
+        // OR if we are in 'redirecting' state (page has visually successfully exited)
+        if (useUIStore.getState().isLoginOpen) return;
+        const navState = useUIStore.getState().navState; // Read fresh state
+        if (navState === 'redirecting') return;
+
         // Paused if login is open (and not navigating)
-        if (isLoginOpen && navState === 'idle') return;
+        // if (isLoginOpen && navState === 'idle') return; // This is now covered by the above checks
 
         let targetX = state.mouse.x;
         let targetY = state.mouse.y;
@@ -264,6 +354,9 @@ export default function Robot() {
 
     return (
         <group position={[0, ROBOT_Y_OFFSET, 0]}>
+            {/* --- Zzz PARTICLES for SLEEP MODE --- */}
+            {isLowPowerMode && <ZzzParticles />}
+
             {/* --- STATIC BODY --- */}
             <group position={[0, 0, 0]}>
                 {/* Torso */}
@@ -292,7 +385,7 @@ export default function Robot() {
                     <mesh ref={leftEyeRef}>
                         <sphereGeometry args={[0.15, 16, 16]} />
                         <meshStandardMaterial color="#00ffff" emissive="#00ffff" emissiveIntensity={2} />
-                        <mesh position={[0, 0, 0.12]}>
+                        <mesh ref={leftPupilRef} position={[0, 0, 0.12]}>
                             <sphereGeometry args={[0.06, 16, 16]} />
                             <meshStandardMaterial color="#000000" />
                         </mesh>
@@ -302,7 +395,7 @@ export default function Robot() {
                     <mesh ref={rightEyeRef}>
                         <sphereGeometry args={[0.15, 16, 16]} />
                         <meshStandardMaterial color="#00ffff" emissive="#00ffff" emissiveIntensity={2} />
-                        <mesh position={[0, 0, 0.12]}>
+                        <mesh ref={rightPupilRef} position={[0, 0, 0.12]}>
                             <sphereGeometry args={[0.06, 16, 16]} />
                             <meshStandardMaterial color="#000000" />
                         </mesh>

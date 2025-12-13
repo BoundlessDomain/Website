@@ -1,6 +1,6 @@
 "use client";
 
-import { LucideIcon, FileText, Utensils, Camera, Feather, BookOpen, User } from "lucide-react";
+import { LucideIcon, FileText, Utensils, Camera, Feather, BookOpen, User, Users } from "lucide-react";
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
@@ -68,15 +68,21 @@ export default function NavigationMenu() {
     const setLoginOpen = useUIStore((state) => state.setLoginOpen);
     const navState = useUIStore((state) => state.navState);
     const setNavState = useUIStore((state) => state.setNavState);
+    const isLowPowerMode = useUIStore((state) => state.isLowPowerMode); // Added
 
     const returningLabel = useUIStore((state) => state.returningLabel);
     const setReturningLabel = useUIStore((state) => state.setReturningLabel);
-
     const [activeItem, setActiveItem] = useState<NavItem | null>(null);
 
     const handleNavClick = async (e: React.MouseEvent, item: NavItem) => {
         e.preventDefault();
         if (navState !== 'idle') return;
+
+        // Low Power Mode: Instant Redirect (No Animation)
+        if (isLowPowerMode) {
+            router.push(item.href);
+            return;
+        }
 
         setActiveItem(item);
         setNavState('grabbing');
@@ -141,7 +147,8 @@ export default function NavigationMenu() {
                             i === 1 ? "mr-12" : "", // Push middle button outward (Left)
                             (activeItem?.label === item.label) ? "opacity-0" : "opacity-100"
                         )}
-                        animate={isLoginOpen ? {} : {
+                        // Reset animation loop if Low Power Mode is ON
+                        animate={(isLoginOpen || isLowPowerMode) ? {} : {
                             y: [0, -10, 0],
                             x: [0, 5, 0]
                         }}
@@ -169,7 +176,8 @@ export default function NavigationMenu() {
                             // Hide the original item when it's the active one being animated
                             (activeItem?.label === item.label) ? "opacity-0" : "opacity-100"
                         )}
-                        animate={isLoginOpen ? {} : {
+                        // Reset animation loop if Low Power Mode is ON
+                        animate={(isLoginOpen || isLowPowerMode) ? {} : {
                             y: [0, -12, 0],
                             x: [0, -5, 0]
                         }}
