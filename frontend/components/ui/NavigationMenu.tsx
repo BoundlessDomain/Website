@@ -114,51 +114,8 @@ export default function NavigationMenu() {
 
     useEffect(() => {
         fetchNavData();
-
-        const validateUser = async (session: any) => {
-            const email = session?.user?.email;
-            setDebugEmail(email || "No Session");
-
-            if (!email) {
-                setOwner(false);
-                setLoggedIn(false);
-                return;
-            }
-
-            setLoggedIn(true);
-
-            try {
-                const res = await fetch('http://localhost:8000/api/verify-owner', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setOwner(data.isOwner);
-                } else {
-                    setOwner(false);
-                }
-            } catch (err) {
-                console.error("Owner verification failed", err);
-                setOwner(false);
-            }
-        };
-
-        // Check active session on mount
-        const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            validateUser(session);
-        };
-        checkSession();
-
-        // Listen for Auth Changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            validateUser(session);
-        });
-
-        return () => subscription.unsubscribe();
-    }, [fetchNavData, setOwner, setLoggedIn]);
+        // Auth logic moved to TopBar (Global) to ensure persistence across all pages
+    }, [fetchNavData]);
 
     const returningLabel = useUIStore((state) => state.returningLabel);
     const setReturningLabel = useUIStore((state) => state.setReturningLabel);
@@ -388,12 +345,7 @@ export default function NavigationMenu() {
             <FeedbackButton />
 
             {/* --- DEBUG OVERLAY (TEMPORARY) --- */}
-            {isDebugMode && (
-                <div className="fixed bottom-4 left-4 z-[9999] bg-black/80 text-white p-2 rounded text-xs pointer-events-none">
-                    Debug: Owner: {isOwner ? 'YES' : 'NO'} | LoginOpen: {isLoginOpen ? 'YES' : 'NO'} <br />
-                    Email: {debugEmail}
-                </div>
-            )}
+
         </div>
     );
 }

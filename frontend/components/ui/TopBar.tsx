@@ -20,19 +20,60 @@ export default function TopBar() {
     const setLoginOpen = useUIStore((state) => state.setLoginOpen);
     const [user, setUser] = useState<SupabaseUser | null>(null);
 
+    const setOwner = useUIStore((state) => state.setOwner);
+    const setLoggedIn = useUIStore((state) => state.setLoggedIn);
+
     useEffect(() => {
+        const validateUser = async (session: any) => {
+            const email = session?.user?.email;
+
+            if (!email) {
+                console.log("[Auth] Session cleared. Resetting Global State.");
+                setUser(null);
+                setOwner(false);
+                setLoggedIn(false);
+                return;
+            }
+
+            setUser(session.user);
+            setLoggedIn(true);
+
+            // Verify Owner
+            try {
+                const res = await fetch('http://localhost:8000/api/verify-owner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log("[Auth] Owner verified:", data.isOwner);
+                    setOwner(data.isOwner);
+                } else {
+                    setOwner(false);
+                }
+            } catch (err) {
+                console.error("[Auth] Verification failed", err);
+                setOwner(false);
+            }
+        };
+
         // Get initial user
-        supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+        supabase.auth.getSession().then(({ data: { session } }) => validateUser(session));
 
         // Listen for changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
+            validateUser(session);
         });
 
         return () => subscription.unsubscribe();
-    }, []);
+    }, [setOwner, setLoggedIn]);
 
     const handleLogout = async () => {
+        // Explicitly clear state immediately for UI responsiveness
+        setOwner(false);
+        setLoggedIn(false);
+        setUser(null);
         await supabase.auth.signOut();
     };
 

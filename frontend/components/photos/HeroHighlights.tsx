@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { RefreshCw } from "lucide-react";
+import clsx from "clsx";
 
 interface Highlight {
     id: string;
@@ -28,7 +29,7 @@ export default function HeroHighlights({ highlights }: HeroHighlightsProps) {
     const handleShuffle = async () => {
         setShuffling(true);
         try {
-            await fetch("http://localhost:8000/api/photos/highlights/shuffle", { method: "POST" });
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/highlights/shuffle`, { method: "POST" });
             window.location.reload(); // Simple reload to fetch new data
         } catch (e) {
             console.error(e);
@@ -41,6 +42,8 @@ export default function HeroHighlights({ highlights }: HeroHighlightsProps) {
     // Use specific indices to create a masonry-style or featured grid
     const mainHighlight = highlights[0];
     const secondaryHighlights = highlights.slice(1, 3);
+
+    const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
 
     return (
         <div className="w-full mb-12 relative group/section">
@@ -63,15 +66,18 @@ export default function HeroHighlights({ highlights }: HeroHighlightsProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[500px]">
                 {/* Main Feature (Left, 2/3 width on desktop) */}
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
+                    initial={isLowPowerMode ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.8 }}
+                    transition={isLowPowerMode ? { duration: 0 } : { duration: 0.8 }}
                     className="md:col-span-2 h-full relative rounded-2xl overflow-hidden group border border-white/5 shadow-2xl"
                 >
                     <img
                         src={mainHighlight.url}
                         alt={mainHighlight.caption}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        className={clsx(
+                            "w-full h-full object-cover",
+                            !isLowPowerMode && "transition-transform duration-700 group-hover:scale-105"
+                        )}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
                     <div className="absolute bottom-6 left-6">
@@ -85,17 +91,23 @@ export default function HeroHighlights({ highlights }: HeroHighlightsProps) {
                     {secondaryHighlights.map((item, i) => (
                         <motion.div
                             key={item.id}
-                            initial={{ opacity: 0, x: 20 }}
+                            initial={isLowPowerMode ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.2 + (i * 0.2) }}
+                            transition={isLowPowerMode ? { duration: 0 } : { duration: 0.5, delay: 0.2 + (i * 0.2) }}
                             className="flex-1 relative rounded-2xl overflow-hidden group border border-white/5"
                         >
                             <img
                                 src={item.url}
                                 alt={item.caption}
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                className={clsx(
+                                    "w-full h-full object-cover",
+                                    !isLowPowerMode && "transition-transform duration-700 group-hover:scale-110"
+                                )}
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+                            <div className={clsx(
+                                "absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-60 transition-opacity",
+                                !isLowPowerMode && "group-hover:opacity-80"
+                            )} />
                             <div className="absolute bottom-4 left-4">
                                 <p className="text-lg font-bold text-white">{item.caption}</p>
                             </div>

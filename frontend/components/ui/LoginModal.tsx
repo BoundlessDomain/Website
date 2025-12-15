@@ -42,7 +42,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: provider,
             options: {
-                redirectTo: `${window.location.origin}`,
+                redirectTo: `${window.location.href}`,
             }
         });
         if (error) setError(error.message);
@@ -100,6 +100,8 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         }
     };
 
+    const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -110,17 +112,24 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={handleClose}
-                        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+                        className={clsx(
+                            "fixed inset-0 z-[60] bg-black/60",
+                            !isLowPowerMode && "backdrop-blur-sm"
+                        )}
                     />
 
                     {/* Modal Window */}
                     <motion.div
-                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                        initial={isLowPowerMode ? { scale: 1, opacity: 1, y: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                        exit={isLowPowerMode ? { scale: 1, opacity: 0, y: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
+                        transition={isLowPowerMode ? { duration: 0 } : undefined}
                         className="fixed inset-0 z-[70] flex items-center justify-center pointer-events-none"
                     >
-                        <div className="w-full max-w-md p-8 rounded-2xl bg-black/95 border border-primary/30 shadow-[0_0_50px_var(--primary-glow)] pointer-events-auto relative overflow-hidden flex flex-col min-h-[500px]">
+                        <div className={clsx(
+                            "w-full max-w-md p-8 rounded-2xl bg-black/95 border border-primary/30 pointer-events-auto relative overflow-hidden flex flex-col min-h-[500px]",
+                            !isLowPowerMode && "shadow-[0_0_50px_var(--primary-glow)]"
+                        )}>
                             {/* Decorative Top Line */}
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
 

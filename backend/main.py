@@ -10,6 +10,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:3000",
+    "http://localhost:3001",
 ]
 
 app.add_middleware(
@@ -257,6 +258,7 @@ def create_album(req: CreateAlbumRequest):
 class UpdateAlbumRequest(BaseModel):
     title: str
     coverUrl: str
+    date: str = None # Optional, if not provided, keep existing
 
 @app.put("/api/photos/albums/{album_id}")
 def update_album(album_id: str, req: UpdateAlbumRequest):
@@ -271,6 +273,8 @@ def update_album(album_id: str, req: UpdateAlbumRequest):
         if album["id"] == album_id:
             album["title"] = req.title
             album["coverUrl"] = req.coverUrl
+            if req.date:
+                album["date"] = req.date
             found = True
             break
             
@@ -309,4 +313,24 @@ def add_photo_to_album(album_id: str, req: AddPhotoRequest):
         with open(PHOTOS_FILE, "w") as f:
             json.dump(data, f, indent=4)
         return {"status": "success", "photo": new_photo}
+    return {"status": "error", "message": "Album not found"}
+
+@app.delete("/api/photos/albums/{album_id}")
+def delete_album(album_id: str):
+    if not os.path.exists(PHOTOS_FILE):
+        return {"status": "error"}
+        
+    with open(PHOTOS_FILE, "r") as f:
+        data = json.load(f)
+        
+    albums = data.get("albums", [])
+    initial_count = len(albums)
+    # Filter out the album with the matching ID
+    data["albums"] = [a for a in albums if a["id"] != album_id]
+    
+    if len(data["albums"]) < initial_count:
+        with open(PHOTOS_FILE, "w") as f:
+            json.dump(data, f, indent=4)
+        return {"status": "success"}
+        
     return {"status": "error", "message": "Album not found"}

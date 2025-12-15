@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 import TopBar from "@/components/ui/TopBar";
+import DebugOverlay from "@/components/ui/DebugOverlay";
 
 export const metadata: Metadata = {
     title: "BobbyYu Website",
@@ -18,6 +19,7 @@ export default function RootLayout({
             <body className="antialiased font-sans">
                 <ThemeProvider>
                     <TopBar />
+                    <DebugOverlay />
                     {children}
                 </ThemeProvider>
             </body>

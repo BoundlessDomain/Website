@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import AlbumModal from "./AlbumModal";
 import { useUIStore } from "@/store/uiStore";
 import { Plus } from "lucide-react";
+import clsx from "clsx";
 
 interface Photo {
     id: string;
@@ -37,7 +38,7 @@ export default function AlbumRow({ albums }: AlbumRowProps) {
         if (!title) return;
 
         try {
-            await fetch("http://localhost:8000/api/photos/albums", {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ title, coverUrl: "" })
@@ -47,6 +48,8 @@ export default function AlbumRow({ albums }: AlbumRowProps) {
             console.error(e);
         }
     };
+
+    const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
 
     return (
         <div className="w-full py-8">
@@ -68,18 +71,24 @@ export default function AlbumRow({ albums }: AlbumRowProps) {
                 {albums.map((album) => (
                     <motion.div
                         key={album.id}
-                        layoutId={`album-card-${album.id}`}
+                        layoutId={!isLowPowerMode ? `album-card-${album.id}` : undefined}
                         onClick={() => setSelectedAlbum(album)}
-                        whileHover={{ y: -10 }}
+                        whileHover={!isLowPowerMode ? { y: -10 } : undefined}
                         className="cursor-pointer w-full"
                     >
                         <div className="aspect-square rounded-2xl overflow-hidden relative group border border-white/10 shadow-lg">
                             <img
                                 src={album.coverUrl}
                                 alt={album.title}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                className={clsx(
+                                    "w-full h-full object-cover",
+                                    !isLowPowerMode && "transition-transform duration-500 group-hover:scale-110"
+                                )}
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+                            <div className={clsx(
+                                "absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 transition-opacity",
+                                !isLowPowerMode && "group-hover:opacity-90"
+                            )} />
 
                             <div className="absolute bottom-0 left-0 p-6 w-full">
                                 <p className="text-xs font-bold text-primary tracking-widest uppercase mb-1">{album.date}</p>

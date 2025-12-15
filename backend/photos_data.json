@@ -21,15 +21,15 @@
     ],
     "albums": [
         {
-            "id": "67e837bd-6089-4654-9608-d96d5199273e",
-            "title": "test name chanfe",
+            "id": "5a9dbae7-1661-416a-b0ea-5e4526664032",
+            "title": "another test",
             "coverUrl": "https://picsum.photos/seed/new/400/400",
             "date": "December 2025",
             "photos": []
         },
         {
             "id": "a1",
-            "title": "Summer 2024",
+            "title": "Summer 2023",
             "coverUrl": "https://picsum.photos/seed/summer/400/400",
             "date": "July 2024",
             "photos": [
@@ -85,9 +85,9 @@
         },
         {
             "id": "a4",
-            "title": "City Walk",
+            "title": "City Walk test",
             "coverUrl": "https://picsum.photos/seed/city/400/400",
-            "date": "May 2024",
+            "date": "June 2025",
             "photos": [
                 {
                     "id": "p9",
@@ -96,5 +96,5 @@
             ]
         }
     ],
-    "shuffleSeed": 33578
+    "shuffleSeed": 66834
 }
