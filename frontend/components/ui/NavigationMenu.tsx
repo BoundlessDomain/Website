@@ -33,7 +33,7 @@ const AVAILABLE_PAGES = [
 
 function NavButton({ item, side, onClick, onEdit, isOwner }: {
     item: NavItemState,
-    side: 'left' | 'right',
+    side: 'left' | 'right' | 'center',
     onClick: (e: React.MouseEvent) => void,
     onEdit: (e: React.MouseEvent) => void,
     isOwner: boolean
@@ -45,23 +45,29 @@ function NavButton({ item, side, onClick, onEdit, isOwner }: {
 
     return (
         <a href={item.href} onClick={onClick} className={clsx(
-            "group relative flex items-center justify-between gap-4 p-2 w-72 transition-all duration-300",
-            side === 'left' ? "flex-row-reverse text-right" : "flex-row text-left",
+            "group relative flex items-center justify-between gap-4 p-2 transition-all duration-300",
+            side === 'left' ? "flex-row-reverse text-right w-72" :
+                side === 'right' ? "flex-row text-left w-72" :
+                    "flex-col text-center w-auto gap-2", // Center variant
             // Pause interactions if Login is Open or Navigating
             (isLoginOpen || navState !== 'idle') ? "pointer-events-none opacity-50 grayscale" : "hover:scale-105 pointer-events-auto"
         )}>
             {/* Text Label */}
             <span className={clsx(
                 "text-primary-text font-bold tracking-widest transition-opacity duration-300 whitespace-nowrap",
-                "text-lg drop-shadow-[0_0_5px_var(--primary-glow)]"
+                "text-lg drop-shadow-[0_0_5px_var(--primary-glow)]",
+                side === 'center' && "order-2" // Text below icon for center
             )}>
                 {item.label}
             </span>
 
             {/* Circle Button */}
-            <div className="relative w-16 h-16 rounded-full border-2 border-primary bg-glass flex items-center justify-center
-                          shadow-[0_0_15px_var(--primary-glow)] group-hover:shadow-[0_0_25px_var(--primary-glow)]
-                          group-hover:border-white transition-all duration-300">
+            <div className={clsx(
+                "relative w-16 h-16 rounded-full border-2 border-primary bg-glass flex items-center justify-center",
+                "shadow-[0_0_15px_var(--primary-glow)] group-hover:shadow-[0_0_25px_var(--primary-glow)]",
+                "group-hover:border-white transition-all duration-300",
+                side === 'center' && "order-1" // Icon above text
+            )}>
                 <IconComponent className="w-8 h-8 text-primary-text group-hover:text-white transition-colors" />
 
                 {/* Edit Pencil Icon (Owner Only) */}
@@ -77,10 +83,12 @@ function NavButton({ item, side, onClick, onEdit, isOwner }: {
             </div>
 
             {/* Connecting Line (Decorative) - Moved to be "under" text */}
-            <div className={clsx(
-                "absolute bottom-0 w-12 h-[2px] bg-secondary-dark -z-10 group-hover:bg-primary transition-colors",
-                side === 'left' ? "right-10 translate-x-full" : "left-10 -translate-x-full"
-            )} />
+            {side !== 'center' && (
+                <div className={clsx(
+                    "absolute bottom-0 w-12 h-[2px] bg-secondary-dark -z-10 group-hover:bg-primary transition-colors",
+                    side === 'left' ? "right-10 translate-x-full" : "left-10 -translate-x-full"
+                )} />
+            )}
         </a>
     );
 }
@@ -99,6 +107,8 @@ export default function NavigationMenu() {
     const isOwner = useUIStore((state) => state.isOwner);
     const fetchNavData = useUIStore((state) => state.fetchNavData);
     const setOwner = useUIStore((state) => state.setOwner);
+    const isLoggedIn = useUIStore((state) => state.isLoggedIn);
+    const setLoggedIn = useUIStore((state) => state.setLoggedIn);
     const isDebugMode = useUIStore((state) => state.isDebugMode);
     const [debugEmail, setDebugEmail] = useState<string | undefined>("Check...");
 
@@ -111,8 +121,11 @@ export default function NavigationMenu() {
 
             if (!email) {
                 setOwner(false);
+                setLoggedIn(false);
                 return;
             }
+
+            setLoggedIn(true);
 
             try {
                 const res = await fetch('http://localhost:8000/api/verify-owner', {
@@ -145,7 +158,7 @@ export default function NavigationMenu() {
         });
 
         return () => subscription.unsubscribe();
-    }, [fetchNavData, setOwner]);
+    }, [fetchNavData, setOwner, setLoggedIn]);
 
     const returningLabel = useUIStore((state) => state.returningLabel);
     const setReturningLabel = useUIStore((state) => state.setReturningLabel);
@@ -275,6 +288,26 @@ export default function NavigationMenu() {
                     </motion.div>
                 ))}
             </div>
+
+            {/* --- CONTACTS BUTTON (Bottom Center) --- */}
+            {isLoggedIn && (
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto"
+                    >
+                        <NavButton
+                            item={{ label: "CONTACTS", iconName: "Users", href: "/contacts" }}
+                            side="center"
+                            onClick={(e) => handleNavClick(e, { label: "CONTACTS", iconName: "Users", href: "/contacts" })}
+                            // For now, we disable editing for this specific fixed button or we'd need a backend field
+                            onEdit={() => console.log("Edit contacts not yet persisted")}
+                            isOwner={false} // Disable edit pencil for now to avoid confusion until backend supports it
+                        />
+                    </motion.div>
+                </div>
+            )}
 
             {/* Edit Modal */}
             <AnimatePresence>

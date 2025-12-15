@@ -1,0 +1,100 @@
+{
+    "highlights": [
+        {
+            "id": "h1",
+            "type": "image",
+            "url": "https://picsum.photos/seed/highlight1/800/600",
+            "caption": "Sunset at the Beach"
+        },
+        {
+            "id": "h2",
+            "type": "image",
+            "url": "https://picsum.photos/seed/highlight2/800/600",
+            "caption": "Mountain Peak"
+        },
+        {
+            "id": "h3",
+            "type": "image",
+            "url": "https://picsum.photos/seed/highlight3/800/600",
+            "caption": "City Lights"
+        }
+    ],
+    "albums": [
+        {
+            "id": "67e837bd-6089-4654-9608-d96d5199273e",
+            "title": "test name chanfe",
+            "coverUrl": "https://picsum.photos/seed/new/400/400",
+            "date": "December 2025",
+            "photos": []
+        },
+        {
+            "id": "a1",
+            "title": "Summer 2024",
+            "coverUrl": "https://picsum.photos/seed/summer/400/400",
+            "date": "July 2024",
+            "photos": [
+                {
+                    "id": "p1",
+                    "url": "https://picsum.photos/seed/s1/600/400"
+                },
+                {
+                    "id": "p2",
+                    "url": "https://picsum.photos/seed/s2/600/400"
+                },
+                {
+                    "id": "p3",
+                    "url": "https://picsum.photos/seed/s3/600/400"
+                }
+            ]
+        },
+        {
+            "id": "a2",
+            "title": "Winter Trip",
+            "coverUrl": "https://picsum.photos/seed/winter/400/400",
+            "date": "December 2023",
+            "photos": [
+                {
+                    "id": "p4",
+                    "url": "https://picsum.photos/seed/w1/600/400"
+                },
+                {
+                    "id": "p5",
+                    "url": "https://picsum.photos/seed/w2/600/400"
+                }
+            ]
+        },
+        {
+            "id": "a3",
+            "title": "Road Trip",
+            "coverUrl": "https://picsum.photos/seed/road/400/400",
+            "date": "March 2024",
+            "photos": [
+                {
+                    "id": "p6",
+                    "url": "https://picsum.photos/seed/r1/600/400"
+                },
+                {
+                    "id": "p7",
+                    "url": "https://picsum.photos/seed/r2/600/400"
+                },
+                {
+                    "id": "p8",
+                    "url": "https://picsum.photos/seed/r3/600/400"
+                }
+            ]
+        },
+        {
+            "id": "a4",
+            "title": "City Walk",
+            "coverUrl": "https://picsum.photos/seed/city/400/400",
+            "date": "May 2024",
+            "photos": [
+                {
+                    "id": "p9",
+                    "url": "https://picsum.photos/seed/c1/600/400"
+                }
+            ]
+        }
+    ],
+    "shuffleSeed": 33578
+}

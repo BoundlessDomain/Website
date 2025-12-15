@@ -33,6 +33,9 @@ interface UIState {
     isOwner: boolean;
     setOwner: (isOwner: boolean) => void;
 
+    isLoggedIn: boolean;
+    setLoggedIn: (isLoggedIn: boolean) => void;
+
     leftNavItems: NavItemState[];
     rightNavItems: NavItemState[];
 
@@ -77,6 +80,9 @@ export const useUIStore = create<UIState>()(
 
             isOwner: false, // Default false, set by Auth
             setOwner: (isOwner) => set({ isOwner }),
+
+            isLoggedIn: false,
+            setLoggedIn: (isLoggedIn) => set({ isLoggedIn }),
 
             leftNavItems: defaultLeftItems,
             rightNavItems: defaultRightItems,

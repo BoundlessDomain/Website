@@ -45,9 +45,16 @@ export default function TopBar() {
             <div className="pointer-events-auto">
                 <button
                     onClick={() => {
-                        // If we are on home, simple reload/do nothing. If subpage, trigger exit.
+                        console.log("Home button clicked, pathname:", window.location.pathname);
                         if (window.location.pathname !== "/") {
+                            console.log("Setting isExiting to true");
                             useUIStore.getState().setIsExiting(true);
+                            // Fallback in case animation hangs
+                            setTimeout(() => {
+                                if (window.location.pathname !== "/") {
+                                    window.location.href = "/";
+                                }
+                            }, 1000);
                         } else {
                             window.location.reload();
                         }

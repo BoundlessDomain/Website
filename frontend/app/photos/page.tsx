@@ -1,19 +1,42 @@
 "use client";
 
-import { Camera } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import PageTransition from "@/components/ui/PageTransition";
+import HeroHighlights from "@/components/photos/HeroHighlights";
+import AlbumRow from "@/components/photos/AlbumRow";
+import { useState, useEffect } from "react";
 
 export default function PhotosPage() {
+    const [data, setData] = useState<{ highlights: any[], albums: any[] } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch('http://localhost:8000/api/photos')
+            .then(res => res.json())
+            .then(data => {
+                setData(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Failed to load photos", err);
+                setLoading(false);
+            });
+    }, []);
+
     return (
         <PageTransition icon={Camera} title="PHOTOS">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="aspect-square bg-white/5 rounded-xl border border-white/10"></div>
-                <div className="aspect-square bg-white/5 rounded-xl border border-white/10"></div>
-                <div className="aspect-square bg-white/5 rounded-xl border border-white/10"></div>
-                <div className="p-8 col-span-full text-center">
-                    <p className="text-xl text-white/80">A visual gallery of moments and places.</p>
+            {loading ? (
+                <div className="flex items-center justify-center h-64">
+                    <Loader2 className="animate-spin text-primary" size={48} />
                 </div>
-            </div>
+            ) : data ? (
+                <div className="pb-20 w-full max-w-7xl mx-auto px-4">
+                    <HeroHighlights highlights={data.highlights} />
+                    <AlbumRow albums={data.albums} />
+                </div>
+            ) : (
+                <div className="text-white/50 text-center">Failed to load photos.</div>
+            )}
         </PageTransition>
     );
 }

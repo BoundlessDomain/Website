@@ -132,3 +132,181 @@ def submit_feedback(req: FeedbackRequest):
     print(f"Sending notification to owners: {owners}")
     
     return {"status": "success", "message": "Feedback saved and owners notified"}
+
+import random
+from datetime import datetime
+import uuid
+
+# --- Photos System ---
+PHOTOS_FILE = "photos_data.json"
+# Placeholder: Replace with your actual Supabase Project URL later
+SUPABASE_STORAGE_URL = "https://[YOUR-PROJECT-ID].supabase.co/storage/v1/object/public/photos/"
+
+def process_url(url):
+    """
+    Hybrid URL Logic:
+    - If it starts with 'http', it's an external link (Picsum, etc.) -> Keep as is.
+    - If NOT, it's a relative path in Supabase Storage -> Prepend Storage URL.
+    """
+    if url.startswith("http"):
+        return url
+    return f"{SUPABASE_STORAGE_URL.rstrip('/')}/{url.lstrip('/')}"
+
+@app.get("/api/photos")
+def get_photos():
+    if not os.path.exists(PHOTOS_FILE):
+        return {"highlights": [], "albums": []}
+    
+    with open(PHOTOS_FILE, "r") as f:
+        data = json.load(f)
+        
+    # --- Dynamic Daily Highlights ---
+    # 1. Gather all photos from all albums
+    all_photos = []
+    albums = data.get("albums", [])
+    
+    # Process Albums URLs
+    for album in albums:
+        album["coverUrl"] = process_url(album.get("coverUrl", ""))
+        title = album.get("title", "")
+        
+        for photo in album.get("photos", []):
+            # Process Photo URL
+            original_url = photo.get("url", "")
+            final_url = process_url(original_url)
+            photo["url"] = final_url
+            
+            all_photos.append({
+                "id": photo["id"],
+                "type": "image",
+                "url": final_url,
+                "caption": title 
+            })
+    
+    # 2. Select 3 random photos, seeded by today's date
+    if all_photos:
+        # Check if we have a forced shuffle seed saved
+        shuffle_seed = data.get("shuffleSeed")
+        
+        if shuffle_seed:
+            random.seed(shuffle_seed)
+        else:
+            # Default to daily seed
+            today_seed = int(datetime.now().strftime("%Y%m%d"))
+            random.seed(today_seed)
+        
+        # Ensure we don't try to sample more than we have
+        count = min(len(all_photos), 3)
+        daily_highlights = random.sample(all_photos, count)
+        
+        # Important: Reset seed
+        random.seed()
+        
+        # Override highlights
+        data["highlights"] = daily_highlights
+        
+    return data
+
+@app.post("/api/photos/highlights/shuffle")
+def shuffle_highlights():
+    if not os.path.exists(PHOTOS_FILE):
+        return {"status": "error"}
+    
+    with open(PHOTOS_FILE, "r") as f:
+        data = json.load(f)
+    
+    # Generate a new random seed and save it
+    new_seed = random.randint(1, 1000000)
+    data["shuffleSeed"] = new_seed
+    
+    with open(PHOTOS_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+        
+    return {"status": "success", "seed": new_seed}
+
+class CreateAlbumRequest(BaseModel):
+    title: str
+    coverUrl: str = ""
+
+@app.post("/api/photos/albums")
+def create_album(req: CreateAlbumRequest):
+    if not os.path.exists(PHOTOS_FILE):
+        return {"status": "error"}
+        
+    with open(PHOTOS_FILE, "r") as f:
+        data = json.load(f)
+        
+    new_album = {
+        "id": str(uuid.uuid4()),
+        "title": req.title,
+        "coverUrl": req.coverUrl if req.coverUrl else "https://picsum.photos/seed/new/400/400",
+        "date": datetime.now().strftime("%B %Y"),
+        "photos": []
+    }
+    
+    if "albums" not in data:
+        data["albums"] = []
+        
+    data["albums"].insert(0, new_album) # Add to top
+    
+    with open(PHOTOS_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+        
+    return {"status": "success", "album": new_album}
+
+class UpdateAlbumRequest(BaseModel):
+    title: str
+    coverUrl: str
+
+@app.put("/api/photos/albums/{album_id}")
+def update_album(album_id: str, req: UpdateAlbumRequest):
+    if not os.path.exists(PHOTOS_FILE):
+        return {"status": "error"}
+        
+    with open(PHOTOS_FILE, "r") as f:
+        data = json.load(f)
+        
+    found = False
+    for album in data.get("albums", []):
+        if album["id"] == album_id:
+            album["title"] = req.title
+            album["coverUrl"] = req.coverUrl
+            found = True
+            break
+            
+    if found:
+        with open(PHOTOS_FILE, "w") as f:
+            json.dump(data, f, indent=4)
+        return {"status": "success"}
+    return {"status": "error", "message": "Album not found"}
+
+class AddPhotoRequest(BaseModel):
+    url: str
+
+@app.post("/api/photos/albums/{album_id}/photos")
+def add_photo_to_album(album_id: str, req: AddPhotoRequest):
+    if not os.path.exists(PHOTOS_FILE):
+        return {"status": "error"}
+        
+    with open(PHOTOS_FILE, "r") as f:
+        data = json.load(f)
+        
+    found = False
+    new_photo = None
+    for album in data.get("albums", []):
+        if album["id"] == album_id:
+            new_photo = {
+                "id": str(uuid.uuid4()),
+                "url": req.url
+            }
+            if "photos" not in album:
+                album["photos"] = []
+            album["photos"].append(new_photo)
+            found = True
+            break
+            
+    if found:
+        with open(PHOTOS_FILE, "w") as f:
+            json.dump(data, f, indent=4)
+        return {"status": "success", "photo": new_photo}
+    return {"status": "error", "message": "Album not found"}

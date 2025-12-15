@@ -11,9 +11,9 @@
             "href": "/recipes"
         },
         {
-            "label": "RECIPES",
-            "iconName": "Utensils",
-            "href": "/recipes"
+            "label": "PHOTOS",
+            "iconName": "Camera",
+            "href": "/photos"
         }
     ],
     "rightNavItems": [
