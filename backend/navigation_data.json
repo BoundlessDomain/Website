@@ -1,0 +1,37 @@
+{
+    "leftNavItems": [
+        {
+            "label": "ARTICLES",
+            "iconName": "FileText",
+            "href": "/articles"
+        },
+        {
+            "label": "RECIPES",
+            "iconName": "Utensils",
+            "href": "/recipes"
+        },
+        {
+            "label": "RECIPES",
+            "iconName": "Utensils",
+            "href": "/recipes"
+        }
+    ],
+    "rightNavItems": [
+        {
+            "label": "POEMS",
+            "iconName": "Feather",
+            "href": "/poems"
+        },
+        {
+            "label": "STORIES",
+            "iconName": "BookOpen",
+            "href": "/stories"
+        },
+        {
+            "label": "ABOUT",
+            "iconName": "User",
+            "href": "/about"
+        }
+    ],
+    "isDebugMode": true
+}

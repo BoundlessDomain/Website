@@ -5,6 +5,7 @@ import { X, Lock, User, Mail, ArrowLeft, Chrome, Linkedin } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
 import { supabase } from "@/utils/supabase";
+import { useUIStore } from "@/store/uiStore";
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -55,11 +56,20 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
         try {
             if (view === 'login') {
-                const { error } = await supabase.auth.signInWithPassword({
+                const { error, data } = await supabase.auth.signInWithPassword({
                     email,
                     password
                 });
                 if (error) throw error;
+
+                // --- OWNER CHECK (MOCK) ---
+                // In production this would check a 'roles' table or metadata
+                if (email.toLowerCase().includes('admin')) {
+                    useUIStore.getState().setOwner(true);
+                } else {
+                    useUIStore.getState().setOwner(false);
+                }
+
                 handleClose();
             }
             else if (view === 'signup') {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Palette, Check, Battery, ChevronLeft, Zap, ZapOff } from "lucide-react";
+import { Settings, Palette, Check, Battery, ChevronLeft, Zap, ZapOff, Bug } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { themes, ThemeKey } from "@/utils/theme";
 import { useUIStore } from "@/store/uiStore";
@@ -14,6 +14,9 @@ export default function SettingsMenu() {
     const { theme, setTheme } = useTheme();
     const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
     const setLowPowerMode = useUIStore((state) => state.setLowPowerMode);
+    const isDebugMode = useUIStore((state) => state.isDebugMode);
+    const setDebugMode = useUIStore((state) => state.setDebugMode);
+    const isOwner = useUIStore((state) => state.isOwner);
 
     return (
         <div className={clsx("relative pointer-events-auto", isOpen ? "z-50" : "z-auto")}>
@@ -80,6 +83,32 @@ export default function SettingsMenu() {
                                         />
                                     </button>
                                 </div>
+
+                                {/* Option: Debug Mode (Owner Only) */}
+                                {isOwner && (
+                                    <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            {isDebugMode ? <Bug size={18} className="text-red-500" /> : <Bug size={18} className="text-white/40" />}
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-white">Debug Mode</span>
+                                                <span className="text-[10px] text-white/50">Global override</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => setDebugMode(!isDebugMode)}
+                                            className={clsx(
+                                                "w-10 h-6 rounded-full p-1 transition-colors duration-300 relative",
+                                                isDebugMode ? "bg-red-500" : "bg-white/20"
+                                            )}
+                                        >
+                                            <motion.div
+                                                className="w-4 h-4 bg-white rounded-full shadow-md"
+                                                animate={{ x: isDebugMode ? 16 : 0 }}
+                                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                            />
+                                        </button>
+                                    </div>
+                                )}
 
                                 {/* Theme Menu Trigger (Hover) */}
                                 <div

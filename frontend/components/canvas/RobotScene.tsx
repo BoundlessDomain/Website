@@ -2,14 +2,8 @@
 
 import * as THREE from "three";
 
-// Polyfill for Three.js r168+ compatibility
-// @ts-ignore
-if (typeof window !== "undefined") {
-    // @ts-ignore
-    THREE.PlaneBufferGeometry = THREE.PlaneGeometry;
-    // @ts-ignore
-    THREE.SphereBufferGeometry = THREE.SphereGeometry;
-}
+// Polyfill removed as checks confirmed modern geometry usage
+
 
 import { Canvas } from "@react-three/fiber";
 import { Suspense, useState, useEffect } from "react";
