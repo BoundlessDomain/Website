@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUIStore, NavItemState } from "@/store/uiStore";
+import FeedbackButton from "./FeedbackButton";
 
 // Map strings to Icon components for serialization
 const IconMap: Record<string, LucideIcon> = {
@@ -350,6 +351,9 @@ export default function NavigationMenu() {
                     </div>
                 )}
             </AnimatePresence>
+            {/* --- FEEDBACK BUTTON --- */}
+            <FeedbackButton />
+
             {/* --- DEBUG OVERLAY (TEMPORARY) --- */}
             {isDebugMode && (
                 <div className="fixed bottom-4 left-4 z-[9999] bg-black/80 text-white p-2 rounded text-xs pointer-events-none">
