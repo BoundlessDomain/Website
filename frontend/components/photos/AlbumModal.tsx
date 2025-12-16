@@ -30,13 +30,24 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
     const isOwner = useUIStore((state) => state.isOwner);
     const [mounted, setMounted] = useState(false);
 
+    // Local state to manage the album data without reloading
+    // Initialize with prop to avoid initial null if possible, though parent checks usually ensure it
+    const [currentAlbum, setCurrentAlbum] = useState<Album | null>(album);
+
     // Local state for inline editing
-    const [title, setTitle] = useState("");
-    const [date, setDate] = useState("");
+    const [title, setTitle] = useState(album?.title || "");
+    const [date, setDate] = useState(album?.date || "");
 
     // Delete State
     const [isDeleting, setIsDeleting] = useState(false);
     const [confirmText, setConfirmText] = useState("");
+
+    // Cover Selection State
+    const [isSelectingCover, setIsSelectingCover] = useState(false);
+
+    // File Upload Logic
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
 
     useEffect(() => {
         setMounted(true);
@@ -45,31 +56,42 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
     // Sync state when album opens
     useEffect(() => {
         if (album) {
-            setTitle(album.title);
-            setDate(album.date);
-        }
-    }, [album]);
+            // Only update if it's different to prevent loops/resets if we were already editing
+            // But usually this effect is for when the modal *opens* or prop changes.
+            // Since we init state from prop, this might be redundant for first render, but good for updates.
+            if (!currentAlbum || currentAlbum.id !== album.id) {
+                setCurrentAlbum(album);
+                setTitle(album.title);
+                setDate(album.date);
 
-    if (!album) return null;
+                // PRELOAD IMAGES: Download all photos client side for smoother scrolling
+                album.photos.forEach(photo => {
+                    if (photo.type !== "video") {
+                        const img = new Image();
+                        // Use Proxy
+                        img.src = `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/proxy?url=${encodeURIComponent(photo.url)}`;
+                    }
+                });
+            }
+        }
+    }, [album, currentAlbum]);
+
+    if (!currentAlbum) return null;
 
     const handleUpdate = async () => {
-        if (title !== album.title || date !== album.date) {
+        if (title !== currentAlbum.title || date !== currentAlbum.date) {
+            // Optimistic Update
+            setCurrentAlbum(prev => prev ? ({ ...prev, title, date }) : null);
+
             try {
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${album.id}`, {
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, coverUrl: album.coverUrl, date })
+                    body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date })
                 });
-                // No reload needed if we just want to save, but to reflect globally we might want to?
-                // For smoother UX, we just let it save silently or with a toast.
-                // But since the parent list needs updating, reload is safest for MVP.
-                window.location.reload();
             } catch (e) { console.error(e); }
         }
     };
-
-    // Cover Selection State
-    const [isSelectingCover, setIsSelectingCover] = useState(false);
 
     const handleEditCover = async () => {
         setIsSelectingCover(!isSelectingCover);
@@ -77,19 +99,21 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
 
     const handlePhotoClick = async (photo: Photo) => {
         if (isSelectingCover) {
-            // Set as cover
+            // Optimistic Update
+            setCurrentAlbum(prev => prev ? ({ ...prev, coverUrl: photo.url }) : null);
+            setIsSelectingCover(false);
+
             try {
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${album.id}`, {
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title, coverUrl: photo.url, date })
                 });
-                window.location.reload();
             } catch (e) {
                 console.error(e);
             }
         } else {
-            // Future lightbox logic or nothing
+            // Future lightbox logic
         }
     };
 
@@ -97,29 +121,33 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
         e.stopPropagation(); // Prevent opening/selecting
         if (!confirm("Are you sure you want to delete this photo?")) return;
 
+        // Optimistic Update: Remove instantaneously
+        setCurrentAlbum(prev => prev ? ({
+            ...prev,
+            photos: prev.photos.filter(p => p.id !== photoId)
+        }) : null);
+
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${album.id}/photos/${photoId}`, {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}/photos/${photoId}`, {
                 method: 'DELETE',
             });
-            window.location.reload();
         } catch (e) { console.error(e); }
     };
 
     const handleDelete = async () => {
-        if (confirmText !== album.title) return;
+        if (confirmText !== currentAlbum.title) return;
 
         try {
-            await fetch(`http://localhost:8000/api/photos/albums/${album.id}`, {
+            await fetch(`http://localhost:8000/api/photos/albums/${currentAlbum.id}`, {
                 method: 'DELETE',
             });
-            window.location.reload();
+            window.location.reload(); // Deleting the whole album still warrants a refresh or navigation
         } catch (e) { console.error(e); }
     };
 
-    // File Upload Logic (Stub)
-    // Upload State
-    const [isUploading, setIsUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+    // File Upload Logic
+    // Upload State moved to top
+
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -127,33 +155,25 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
 
         setIsUploading(true);
         setUploadProgress({ current: 0, total: files.length });
-        console.log(`Starting parallel upload of ${files.length} files...`);
 
-        // Convert FileList to Array
         const filesArray = Array.from(files);
+        const newPhotos: Photo[] = [];
 
         try {
-            // Map each file to a Promise
             const uploadPromises = filesArray.map(async (file, i) => {
                 const fileExt = file.name.split('.').pop();
                 const fileType = file.type.startsWith('video/') ? 'video' : 'image';
 
-                // Unique filename
-                const folderName = album.title.trim().replace(/[^a-zA-Z0-9-_]/g, '_');
-                const uniqueId = Math.random().toString(36).substring(7); // Extra randomness for parallel safety
+                const folderName = currentAlbum.title.trim().replace(/[^a-zA-Z0-9-_]/g, '_');
+                const uniqueId = Math.random().toString(36).substring(7);
                 const fileName = `${folderName}/${Date.now()}_${uniqueId}.${fileExt}`;
-
-                console.log(`[File ${i}] Starting: ${file.name}`);
 
                 // 1. Upload to Supabase
                 const { error: uploadError } = await supabase.storage
                     .from('gallery')
                     .upload(fileName, file);
 
-                if (uploadError) {
-                    console.error(`[File ${i}] Supabase Error:`, uploadError);
-                    throw uploadError;
-                }
+                if (uploadError) throw uploadError;
 
                 // 2. Get Public URL
                 const { data: { publicUrl } } = supabase.storage
@@ -161,33 +181,38 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                     .getPublicUrl(fileName);
 
                 // 3. Save to Backend
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${album.id}/photos`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}/photos`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: publicUrl, type: fileType })
                 });
 
-                if (!res.ok) {
-                    const errText = await res.text();
-                    console.error(`[File ${i}] Backend Error:`, errText);
-                    throw new Error(errText);
+                if (!res.ok) throw new Error(await res.text());
+
+                // Collect new photo data (we need the ID from backend but for now generate temp or use what we returned)
+                // To be accurate, we should get the ID from the response. The backend returns { "photo": { ... } }
+                const data = await res.json();
+                if (data.photo) {
+                    newPhotos.push(data.photo);
                 }
 
-                // Update Progress safely
                 setUploadProgress(prev => ({ ...prev, current: prev.current + 1 }));
-                console.log(`[File ${i}] Completed`);
             });
 
-            // Execute all seamlessly
             await Promise.all(uploadPromises);
 
-            console.log("All parallel uploads complete!");
-            window.location.reload();
+            // Optimistic Update: Add new photos to grid
+            setCurrentAlbum(prev => prev ? ({
+                ...prev,
+                photos: [...newPhotos, ...prev.photos] // Add new photos to top
+            }) : null);
+
+            setIsUploading(false);
 
         } catch (error: any) {
-            console.error("One or more uploads failed:", error);
+            console.error("Upload failed:", error);
             if (error.message?.includes("row-level security")) {
-                alert("Upload failed: Permission denied (RLS). Check Supabase policies.");
+                alert("Upload failed: Permission denied (RLS).");
             } else {
                 alert(`Some uploads failed: ${error.message}`);
             }
@@ -209,11 +234,11 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
             />
 
             <motion.div
-                layoutId={!isLowPowerMode ? `album-card-${album.id}` : undefined}
+                layoutId={!isLowPowerMode ? `album-card-${currentAlbum.id}` : undefined}
                 initial={isLowPowerMode ? { opacity: 0 } : undefined}
                 animate={isLowPowerMode ? { opacity: 1 } : undefined}
                 exit={isLowPowerMode ? { opacity: 0 } : undefined}
-                className="bg-black/90 border border-white/10 w-full max-w-5xl h-[80vh] rounded-3xl overflow-hidden relative z-[101] flex flex-col shadow-2xl"
+                className="bg-black/90 border border-white/10 w-full max-w-[95vw] h-[90vh] rounded-3xl overflow-hidden relative z-[101] flex flex-col shadow-2xl"
             >
                 {/* Header */}
                 <div className={clsx(
@@ -224,20 +249,20 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                         <div className="flex-1 flex items-center justify-between animate-pulse bg-red-900/20 p-4 rounded-xl border border-red-500/50">
                             <div className="flex flex-col gap-1">
                                 <span className="text-red-400 font-bold uppercase tracking-widest text-xs">Danger Zone</span>
-                                <span className="text-white text-sm">Type <span className="font-bold text-white select-all">"{album.title}"</span> to confirm deletion.</span>
+                                <span className="text-white text-sm">Type <span className="font-bold text-white select-all">"{currentAlbum.title}"</span> to confirm deletion.</span>
                             </div>
                             <div className="flex items-center gap-4">
                                 <input
                                     type="text"
                                     value={confirmText}
                                     onChange={(e) => setConfirmText(e.target.value)}
-                                    placeholder={album.title}
+                                    placeholder={currentAlbum.title}
                                     className="bg-black/50 border border-red-500/30 rounded px-3 py-2 text-white placeholder:text-white/20 focus:outline-none focus:border-red-500"
                                     autoFocus
                                 />
                                 <button
                                     onClick={handleDelete}
-                                    disabled={confirmText !== album.title}
+                                    disabled={confirmText !== currentAlbum.title}
                                     className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded flex items-center gap-2 transition-all"
                                 >
                                     <Trash2 size={16} /> DELETE
@@ -261,7 +286,7 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                                             className="text-3xl font-bold text-white bg-transparent border-b border-transparent hover:border-white/20 focus:border-primary outline-none w-full transition-colors"
                                         />
                                     ) : (
-                                        <motion.h2 className="text-3xl font-bold text-white">{album.title}</motion.h2>
+                                        <motion.h2 className="text-3xl font-bold text-white">{currentAlbum.title}</motion.h2>
                                     )}
 
                                     {/* Date (Inline Edit) */}
@@ -280,7 +305,7 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                                                 date
                                             )}
                                         </span>
-                                        <span className="flex items-center gap-1"><ImageIcon size={14} /> {album.photos.length} Photos</span>
+                                        <span className="flex items-center gap-1"><ImageIcon size={14} /> {currentAlbum.photos.length} Photos</span>
                                         {mounted && isOwner && (
                                             <>
                                                 <button
@@ -311,12 +336,12 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                     )}
                 </div>
 
-                {/* Grid */}
+                {/* Masonry Grid */}
                 <div className="flex-1 overflow-y-auto p-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4">
                         {mounted && isOwner && !isSelectingCover && (
                             isUploading ? (
-                                <div className="aspect-[4/3] rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2">
+                                <div className="break-inside-avoid mb-4 rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 p-8">
                                     <div className="flex flex-col items-center justify-center gap-3 w-full px-4">
                                         <div className="p-3 rounded-full bg-white/10 text-white">
                                             <UploadCloud size={24} className="animate-bounce" />
@@ -334,7 +359,7 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                                 </div>
                             ) : (
                                 <label
-                                    className="aspect-[4/3] rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-colors group cursor-pointer"
+                                    className="break-inside-avoid mb-4 block w-full rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-colors group cursor-pointer p-8"
                                 >
                                     <div className="p-3 rounded-full bg-primary/20 text-primary group-hover:scale-110 transition-transform">
                                         <UploadCloud size={24} />
@@ -350,7 +375,7 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                                 </label>
                             )
                         )}
-                        {album.photos.map((photo, i) => (
+                        {currentAlbum.photos.map((photo, i) => (
                             <motion.div
                                 key={photo.id}
                                 layout
@@ -359,8 +384,8 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                                 animate={isLowPowerMode ? { opacity: 1 } : { opacity: 1, y: 0 }}
                                 transition={isLowPowerMode ? { duration: 0 } : { delay: i * 0.1 }}
                                 className={clsx(
-                                    "aspect-[4/3] rounded-xl overflow-hidden bg-white/5 border relative group cursor-pointer",
-                                    isSelectingCover ? "border-primary hover:opacity-80 hover:scale-[1.02] transition-all" : "border-white/5"
+                                    "break-inside-avoid mb-4 block w-full rounded-xl overflow-hidden relative group cursor-pointer",
+                                    isSelectingCover ? "border-2 border-primary hover:opacity-80 scale-[0.98] transition-all" : ""
                                 )}
                             >
                                 {isSelectingCover && (
@@ -380,11 +405,12 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                                 )}
 
                                 {photo.type === "video" ? (
-                                    <div className="w-full h-full relative group">
+                                    <div className="w-full relative group">
                                         <video
-                                            src={photo.url}
-                                            className="w-full h-full object-cover"
+                                            src={`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/proxy?url=${encodeURIComponent(photo.url)}`}
+                                            className="w-full h-auto object-contain block"
                                             controls={!isSelectingCover}
+                                            preload="metadata" // Optimisation: Don't auto-download heavy bits
                                             loop
                                             muted
                                             playsInline
@@ -392,16 +418,16 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                                     </div>
                                 ) : (
                                     <img
-                                        src={photo.url}
+                                        src={`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/proxy?url=${encodeURIComponent(photo.url)}`}
                                         className={clsx(
-                                            "w-full h-full object-cover",
-                                            !isLowPowerMode && !isSelectingCover && "transition-transform duration-500 group-hover:scale-110"
+                                            "w-full h-auto object-contain block",
+                                            !isLowPowerMode && !isSelectingCover && "transition-transform duration-500 group-hover:scale-105"
                                         )}
-                                        loading="lazy"
+                                        loading="eager" // Optimisation: Load immediately since we are preloading anyway
                                     />
                                 )}
                                 <div className={clsx(
-                                    "absolute inset-0 bg-black/0 transition-colors pointer-events-none",
+                                    "absolute inset-0 bg-black/0 transition-colors pointer-events-none rounded-xl",
                                     !isLowPowerMode && !isSelectingCover && "group-hover:bg-black/20"
                                 )} />
                             </motion.div>

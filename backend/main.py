@@ -363,3 +363,75 @@ def delete_photo_from_album(album_id: str, photo_id: str):
             
     if not found_album:
         return {"status": "error", "message": "Album not found"}
+# --- Proxy & Cache System ---
+import hashlib
+import urllib.request
+import shutil
+from fastapi.responses import FileResponse
+
+CACHE_DIR = "cache"
+
+# Ensure cache dir exists
+if not os.path.exists(CACHE_DIR):
+    os.makedirs(CACHE_DIR)
+
+# Clear cache on startup (simulating "delete when website is closed/restarted")
+# In a real app we might want to do this on shutdown or use a lifespan event, 
+# but simply clearing it here ensures fresh start when running this script.
+for filename in os.listdir(CACHE_DIR):
+    file_path = os.path.join(CACHE_DIR, filename)
+    try:
+        if os.path.isfile(file_path) or os.path.islink(file_path):
+            os.unlink(file_path)
+        elif os.path.isdir(file_path):
+            shutil.rmtree(file_path)
+    except Exception as e:
+        print(f"Failed to delete {file_path}. Reason: {e}")
+
+@app.get("/api/proxy")
+def proxy_image(url: str):
+    """
+    Downloads and caches the image from the given URL.
+    Serves the local file.
+    """
+    if not url:
+        raise HTTPException(status_code=400, detail="Missing URL")
+
+    # Generate filename from hash of URL
+    url_hash = hashlib.md5(url.encode('utf-8')).hexdigest()
+    # Attempt to guess extension or default to .bin. 
+    # Proper way is checking Content-Type header but for simplicity we can try to parse url or use generic.
+    # If the URL has an extension, use it.
+    ext = os.path.splitext(url.split("?")[0])[1]
+    if not ext:
+        ext = ".jpg" # Default fallback
+    
+    filename = f"{url_hash}{ext}"
+    file_path = os.path.join(CACHE_DIR, filename)
+
+    # Check cache
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+
+    # Download and cache
+    try:
+        # Use a user agent to avoid 403s from some strict servers (though Supabase usually fine)
+        req = urllib.request.Request(
+            url, 
+            data=None, 
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        )
+        with urllib.request.urlopen(req) as response, open(file_path, 'wb') as out_file:
+            shutil.copyfileobj(response, out_file)
+            
+        return FileResponse(file_path)
+    except Exception as e:
+        print(f"Proxy Error for {url}: {e}")
+        # If download fails, redirect or 404. 
+        # Redirecting to original URL is a safe fallback if backend fails to download.
+        # But we can't redirect with FileResponse return type expected implicitly.
+        # Let's return error or try to redirect (302).
+        from starlette.responses import RedirectResponse
+        return RedirectResponse(url=url)
