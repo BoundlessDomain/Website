@@ -24,7 +24,7 @@ const IconMap: Record<string, LucideIcon> = {
 const AVAILABLE_PAGES = [
     { label: "ARTICLES", href: "/articles", iconName: "FileText" },
     { label: "RECIPES", href: "/recipes", iconName: "Utensils" },
-    { label: "PHOTOS", href: "/photos", iconName: "Camera" },
+    { label: "GALLERY", href: "/gallery", iconName: "Camera" },
     { label: "POEMS", href: "/poems", iconName: "Feather" },
     { label: "STORIES", href: "/stories", iconName: "BookOpen" },
     { label: "ABOUT", href: "/about", iconName: "User" },

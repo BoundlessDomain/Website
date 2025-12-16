@@ -21,6 +21,34 @@
     ],
     "albums": [
         {
+            "id": "e44b492c-db90-4a09-94d9-38d182e7a236",
+            "title": "Test Album",
+            "coverUrl": "https://picsum.photos/seed/new/400/400",
+            "date": "January 2000",
+            "photos": [
+                {
+                    "id": "adc174e8-dbe8-45de-adbd-2ad4f4fb9e5f",
+                    "url": "https://jywsejauxoxnwndocyee.supabase.co/storage/v1/object/public/gallery/Test_Album/1765926842302_1.jpg",
+                    "type": "image"
+                },
+                {
+                    "id": "55bb6fbd-51b4-4a05-a136-1b99c9d7f637",
+                    "url": "https://jywsejauxoxnwndocyee.supabase.co/storage/v1/object/public/gallery/Test_Album/1765926967413_0.jpg",
+                    "type": "image"
+                },
+                {
+                    "id": "216ca7ed-56b4-4eb2-b1b6-d7fd7df4eca1",
+                    "url": "https://jywsejauxoxnwndocyee.supabase.co/storage/v1/object/public/gallery/Test_Album/1765927043013_1.jpg",
+                    "type": "image"
+                },
+                {
+                    "id": "f68ae5ca-74a9-4b96-9ac3-8eeaec915d8e",
+                    "url": "https://jywsejauxoxnwndocyee.supabase.co/storage/v1/object/public/gallery/Test_Album/1765927088741_2.jpg",
+                    "type": "image"
+                }
+            ]
+        },
+        {
             "id": "a1",
             "title": "Summer 2023",
             "coverUrl": "https://picsum.photos/seed/summer/400/400",

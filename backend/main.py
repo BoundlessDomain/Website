@@ -42,7 +42,7 @@ def load_data():
             "leftNavItems": [
                 {"label": "ARTICLES", "iconName": "FileText", "href": "/articles"},
                 {"label": "RECIPES", "iconName": "Utensils", "href": "/recipes"},
-                {"label": "PHOTOS", "iconName": "Camera", "href": "/photos"},
+                {"label": "GALLERY", "iconName": "Camera", "href": "/gallery"},
             ],
             "rightNavItems": [
                 {"label": "POEMS", "iconName": "Feather", "href": "/poems"},
@@ -141,7 +141,7 @@ import uuid
 # --- Photos System ---
 PHOTOS_FILE = "photos_data.json"
 # Placeholder: Replace with your actual Supabase Project URL later
-SUPABASE_STORAGE_URL = "https://[YOUR-PROJECT-ID].supabase.co/storage/v1/object/public/photos/"
+SUPABASE_STORAGE_URL = "https://[YOUR-PROJECT-ID].supabase.co/storage/v1/object/public/gallery/"
 
 def process_url(url):
     """
@@ -176,10 +176,11 @@ def get_photos():
             original_url = photo.get("url", "")
             final_url = process_url(original_url)
             photo["url"] = final_url
+            media_type = photo.get("type", "image")
             
             all_photos.append({
                 "id": photo["id"],
-                "type": "image",
+                "type": media_type,
                 "url": final_url,
                 "caption": title 
             })
@@ -286,6 +287,7 @@ def update_album(album_id: str, req: UpdateAlbumRequest):
 
 class AddPhotoRequest(BaseModel):
     url: str
+    type: str = "image"
 
 @app.post("/api/photos/albums/{album_id}/photos")
 def add_photo_to_album(album_id: str, req: AddPhotoRequest):
@@ -301,7 +303,8 @@ def add_photo_to_album(album_id: str, req: AddPhotoRequest):
         if album["id"] == album_id:
             new_photo = {
                 "id": str(uuid.uuid4()),
-                "url": req.url
+                "url": req.url,
+                "type": req.type
             }
             if "photos" not in album:
                 album["photos"] = []
@@ -334,3 +337,29 @@ def delete_album(album_id: str):
         return {"status": "success"}
         
     return {"status": "error", "message": "Album not found"}
+
+
+@app.delete("/api/photos/albums/{album_id}/photos/{photo_id}")
+def delete_photo_from_album(album_id: str, photo_id: str):
+    if not os.path.exists(PHOTOS_FILE):
+        return {"status": "error"}
+        
+    with open(PHOTOS_FILE, "r") as f:
+        data = json.load(f)
+        
+    found_album = False
+    for album in data.get("albums", []):
+        if album["id"] == album_id:
+            found_album = True
+            initial_count = len(album.get("photos", []))
+            # Filter out the photo
+            album["photos"] = [p for p in album["photos"] if p["id"] != photo_id]
+            
+            if len(album["photos"]) < initial_count:
+                with open(PHOTOS_FILE, "w") as f:
+                    json.dump(data, f, indent=4)
+                return {"status": "success"}
+            return {"status": "error", "message": "Photo not found"}
+            
+    if not found_album:
+        return {"status": "error", "message": "Album not found"}

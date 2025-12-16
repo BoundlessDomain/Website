@@ -5,10 +5,12 @@ import { useState, useEffect } from "react";
 import { X, Calendar, Image as ImageIcon, Edit2, Plus, UploadCloud, Trash2 } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import clsx from "clsx";
+import { supabase } from "@/utils/supabase";
 
 interface Photo {
     id: string;
     url: string;
+    type?: "image" | "video";
 }
 
 interface Album {
@@ -66,19 +68,41 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
         }
     };
 
+    // Cover Selection State
+    const [isSelectingCover, setIsSelectingCover] = useState(false);
+
     const handleEditCover = async () => {
-        const newCover = prompt("Enter Cover Image URL:", album.coverUrl);
-        if (newCover && newCover !== album.coverUrl) {
-            // Reuse update logic
+        setIsSelectingCover(!isSelectingCover);
+    };
+
+    const handlePhotoClick = async (photo: Photo) => {
+        if (isSelectingCover) {
+            // Set as cover
             try {
                 await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${album.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, coverUrl: newCover, date })
+                    body: JSON.stringify({ title, coverUrl: photo.url, date })
                 });
                 window.location.reload();
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error(e);
+            }
+        } else {
+            // Future lightbox logic or nothing
         }
+    };
+
+    const handleDeletePhoto = async (photoId: string, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent opening/selecting
+        if (!confirm("Are you sure you want to delete this photo?")) return;
+
+        try {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${album.id}/photos/${photoId}`, {
+                method: 'DELETE',
+            });
+            window.location.reload();
+        } catch (e) { console.error(e); }
     };
 
     const handleDelete = async () => {
@@ -93,29 +117,84 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
     };
 
     // File Upload Logic (Stub)
+    // Upload State
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
 
-        // 1. Upload to Supabase Storage (Mock/Placeholders)
-        console.log("Uploading file:", file.name);
+        setIsUploading(true);
+        setUploadProgress({ current: 0, total: files.length });
+        console.log(`Starting parallel upload of ${files.length} files...`);
 
-        // TODO: Use Supabase Client to upload
-        // const { data, error } = await supabase.storage.from('photos').upload(`public/${file.name}`, file);
+        // Convert FileList to Array
+        const filesArray = Array.from(files);
 
-        // 2. Get Public URL
-        // const publicUrl = ...
+        try {
+            // Map each file to a Promise
+            const uploadPromises = filesArray.map(async (file, i) => {
+                const fileExt = file.name.split('.').pop();
+                const fileType = file.type.startsWith('video/') ? 'video' : 'image';
 
-        // For now, we unfortunately can't upload without the bucket. 
-        // We will just alert the user this is ready to go.
-        alert(`File selected: ${file.name}\n\nBackend upload logic is ready! Once Supabase Storage is connected, this will upload automatically.`);
+                // Unique filename
+                const folderName = album.title.trim().replace(/[^a-zA-Z0-9-_]/g, '_');
+                const uniqueId = Math.random().toString(36).substring(7); // Extra randomness for parallel safety
+                const fileName = `${folderName}/${Date.now()}_${uniqueId}.${fileExt}`;
 
-        // Mock success for UI feedback?
-        // window.location.reload();
+                console.log(`[File ${i}] Starting: ${file.name}`);
+
+                // 1. Upload to Supabase
+                const { error: uploadError } = await supabase.storage
+                    .from('gallery')
+                    .upload(fileName, file);
+
+                if (uploadError) {
+                    console.error(`[File ${i}] Supabase Error:`, uploadError);
+                    throw uploadError;
+                }
+
+                // 2. Get Public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('gallery')
+                    .getPublicUrl(fileName);
+
+                // 3. Save to Backend
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${album.id}/photos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: publicUrl, type: fileType })
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    console.error(`[File ${i}] Backend Error:`, errText);
+                    throw new Error(errText);
+                }
+
+                // Update Progress safely
+                setUploadProgress(prev => ({ ...prev, current: prev.current + 1 }));
+                console.log(`[File ${i}] Completed`);
+            });
+
+            // Execute all seamlessly
+            await Promise.all(uploadPromises);
+
+            console.log("All parallel uploads complete!");
+            window.location.reload();
+
+        } catch (error: any) {
+            console.error("One or more uploads failed:", error);
+            if (error.message?.includes("row-level security")) {
+                alert("Upload failed: Permission denied (RLS). Check Supabase policies.");
+            } else {
+                alert(`Some uploads failed: ${error.message}`);
+            }
+            setIsUploading(false);
+        }
     };
 
-    // File Upload Logic (Stub)
-    // ... (previous upload logic)
 
     const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
 
@@ -204,8 +283,14 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                                         <span className="flex items-center gap-1"><ImageIcon size={14} /> {album.photos.length} Photos</span>
                                         {mounted && isOwner && (
                                             <>
-                                                <button onClick={handleEditCover} className="flex items-center gap-1 text-primary hover:text-white transition-colors ml-2">
-                                                    <Edit2 size={12} /> Edit Cover
+                                                <button
+                                                    onClick={handleEditCover}
+                                                    className={clsx(
+                                                        "flex items-center gap-1 transition-colors ml-2 px-2 py-0.5 rounded",
+                                                        isSelectingCover ? "bg-primary text-black font-bold animate-pulse" : "text-primary hover:text-white"
+                                                    )}
+                                                >
+                                                    <Edit2 size={12} /> {isSelectingCover ? "SELECT PHOTO..." : "Edit Cover"}
                                                 </button>
                                                 <button
                                                     onClick={() => setIsDeleting(true)}
@@ -229,42 +314,101 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                 {/* Grid */}
                 <div className="flex-1 overflow-y-auto p-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        {mounted && isOwner && (
-                            <label
-                                className="aspect-[4/3] rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-colors group cursor-pointer"
-                            >
-                                <div className="p-3 rounded-full bg-primary/20 text-primary group-hover:scale-110 transition-transform">
-                                    <UploadCloud size={24} />
+                        {mounted && isOwner && !isSelectingCover && (
+                            isUploading ? (
+                                <div className="aspect-[4/3] rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2">
+                                    <div className="flex flex-col items-center justify-center gap-3 w-full px-4">
+                                        <div className="p-3 rounded-full bg-white/10 text-white">
+                                            <UploadCloud size={24} className="animate-bounce" />
+                                        </div>
+                                        <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                                            <div
+                                                className="bg-primary h-full transition-all duration-300"
+                                                style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold text-white/50 tracking-wider">
+                                            UPLOADING {uploadProgress.current}/{uploadProgress.total}
+                                        </span>
+                                    </div>
                                 </div>
-                                <span className="text-sm font-bold text-white/50">ADD PHOTO</span>
-                                <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*" />
-                            </label>
+                            ) : (
+                                <label
+                                    className="aspect-[4/3] rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-colors group cursor-pointer"
+                                >
+                                    <div className="p-3 rounded-full bg-primary/20 text-primary group-hover:scale-110 transition-transform">
+                                        <UploadCloud size={24} />
+                                    </div>
+                                    <span className="text-sm font-bold text-white/50">ADD MEDIA</span>
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        onChange={handleFileUpload}
+                                        accept="image/png, image/jpeg, image/webp, image/gif, video/mp4, video/webm"
+                                        multiple
+                                    />
+                                </label>
+                            )
                         )}
                         {album.photos.map((photo, i) => (
                             <motion.div
                                 key={photo.id}
+                                layout
+                                onClick={() => handlePhotoClick(photo)}
                                 initial={isLowPowerMode ? { opacity: 1 } : { opacity: 0, y: 20 }}
                                 animate={isLowPowerMode ? { opacity: 1 } : { opacity: 1, y: 0 }}
                                 transition={isLowPowerMode ? { duration: 0 } : { delay: i * 0.1 }}
-                                className="aspect-[4/3] rounded-xl overflow-hidden bg-white/5 border border-white/5 relative group"
+                                className={clsx(
+                                    "aspect-[4/3] rounded-xl overflow-hidden bg-white/5 border relative group cursor-pointer",
+                                    isSelectingCover ? "border-primary hover:opacity-80 hover:scale-[1.02] transition-all" : "border-white/5"
+                                )}
                             >
-                                <img
-                                    src={photo.url}
-                                    className={clsx(
-                                        "w-full h-full object-cover",
-                                        !isLowPowerMode && "transition-transform duration-500 group-hover:scale-110"
-                                    )}
-                                    loading="lazy"
-                                />
+                                {isSelectingCover && (
+                                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                        <span className="bg-primary text-black font-bold px-3 py-1 rounded-full text-xs shadow-lg">SET AS COVER</span>
+                                    </div>
+                                )}
+
+                                {mounted && isOwner && !isSelectingCover && (
+                                    <button
+                                        onClick={(e) => handleDeletePhoto(photo.id, e)}
+                                        className="absolute top-2 right-2 z-20 p-2 bg-red-600/80 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Delete Photo"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                )}
+
+                                {photo.type === "video" ? (
+                                    <div className="w-full h-full relative group">
+                                        <video
+                                            src={photo.url}
+                                            className="w-full h-full object-cover"
+                                            controls={!isSelectingCover}
+                                            loop
+                                            muted
+                                            playsInline
+                                        />
+                                    </div>
+                                ) : (
+                                    <img
+                                        src={photo.url}
+                                        className={clsx(
+                                            "w-full h-full object-cover",
+                                            !isLowPowerMode && !isSelectingCover && "transition-transform duration-500 group-hover:scale-110"
+                                        )}
+                                        loading="lazy"
+                                    />
+                                )}
                                 <div className={clsx(
-                                    "absolute inset-0 bg-black/0 transition-colors",
-                                    !isLowPowerMode && "group-hover:bg-black/20"
+                                    "absolute inset-0 bg-black/0 transition-colors pointer-events-none",
+                                    !isLowPowerMode && !isSelectingCover && "group-hover:bg-black/20"
                                 )} />
                             </motion.div>
                         ))}
                     </div>
                 </div>
-            </motion.div>
-        </div>
+            </motion.div >
+        </div >
     );
 }

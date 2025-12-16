@@ -11,9 +11,9 @@
             "href": "/recipes"
         },
         {
-            "label": "PHOTOS",
+            "label": "GALLERY",
             "iconName": "Camera",
-            "href": "/photos"
+            "href": "/gallery"
         }
     ],
     "rightNavItems": [
