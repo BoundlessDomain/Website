@@ -21,13 +21,6 @@
     ],
     "albums": [
         {
-            "id": "5a9dbae7-1661-416a-b0ea-5e4526664032",
-            "title": "another test",
-            "coverUrl": "https://picsum.photos/seed/new/400/400",
-            "date": "December 2025",
-            "photos": []
-        },
-        {
             "id": "a1",
             "title": "Summer 2023",
             "coverUrl": "https://picsum.photos/seed/summer/400/400",
@@ -96,5 +89,5 @@
             ]
         }
     ],
-    "shuffleSeed": 66834
+    "shuffleSeed": 413821
 }

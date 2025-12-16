@@ -38,9 +38,6 @@ export default function DebugOverlay() {
                 <span>Login Modal:</span> <span>{isLoginOpen ? 'OPEN' : 'CLOSED'}</span>
                 <span>Memory:</span> <span className="text-yellow-400">{memory}</span>
             </div>
-            <div className="mt-2 pt-2 border-t border-white/10 text-[10px] text-white/50">
-                Overlay is Global & Persistent
-            </div>
         </div>
     );
 }
