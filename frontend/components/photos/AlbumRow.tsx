@@ -83,6 +83,7 @@ export default function AlbumRow({ albums, onSelectAlbum }: AlbumRowProps) {
                                     "w-full h-full object-cover",
                                     !isLowPowerMode && "transition-transform duration-500 group-hover:scale-110"
                                 )}
+                                loading="lazy"
                             />
                             <div className={clsx(
                                 "absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 transition-opacity",

@@ -129,7 +129,7 @@ export default function TopBar() {
                         {/* Profile Circle */}
                         <div className="w-12 h-12 rounded-full border-2 border-primary bg-glass backdrop-blur-md overflow-hidden relative shadow-[0_0_15px_var(--primary-glow)] group">
                             {user.user_metadata?.avatar_url ? (
-                                <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" loading="lazy" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-secondary-dark">
                                     <span className="text-primary-text font-bold text-lg uppercase">

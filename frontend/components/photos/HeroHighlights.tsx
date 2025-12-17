@@ -82,6 +82,7 @@ export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHi
                             "w-full h-full object-cover",
                             !isLowPowerMode && "transition-transform duration-700 group-hover:scale-105"
                         )}
+                        loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
                     <div className="absolute bottom-6 left-6">
@@ -109,6 +110,7 @@ export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHi
                                     "w-full h-full object-cover",
                                     !isLowPowerMode && "transition-transform duration-700 group-hover:scale-110"
                                 )}
+                                loading="lazy"
                             />
                             <div className={clsx(
                                 "absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-60 transition-opacity",

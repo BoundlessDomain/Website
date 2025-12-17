@@ -1,10 +1,5 @@
 "use client";
 
-import * as THREE from "three";
-
-// Polyfill removed as checks confirmed modern geometry usage
-
-
 import { Canvas } from "@react-three/fiber";
 import { Suspense, useState, useEffect } from "react";
 import { OrbitControls } from "@react-three/drei";
@@ -23,6 +18,8 @@ export default function RobotScene() {
             shadows
             eventSource={eventSource}
             eventPrefix="client"
+            dpr={[1, 2]} // Cap DPR to save resources on high-DPI screens
+            gl={{ preserveDrawingBuffer: true, powerPreference: "high-performance" }}
         >
             <Suspense fallback={null}>
                 {/* Lighting for Cyberpunk feel */}

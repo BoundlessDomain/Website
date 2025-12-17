@@ -1,6 +1,8 @@
-import { useRef, useState, useMemo } from "react";
+"use client";
+
+import { useRef, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Mesh, Group, Vector3 } from "three";
+import { Mesh, Group, Vector3, Raycaster, Plane } from "three";
 import { Text } from "@react-three/drei";
 import * as THREE from "three";
 import { useUIStore } from "@/store/uiStore";
@@ -79,8 +81,14 @@ export default function Robot() {
     const ROBOT_Y_OFFSET = -2.5;
 
     // Shoulder Local Positions (relative to Robot Root)
-    const LEFT_SHOULDER_POS = new Vector3(-0.9, 2.2, 0);
-    const RIGHT_SHOULDER_POS = new Vector3(0.9, 2.2, 0);
+    // Memoize constant vectors
+    const LEFT_SHOULDER_POS = useMemo(() => new Vector3(-0.9, 2.2, 0), []);
+    const RIGHT_SHOULDER_POS = useMemo(() => new Vector3(0.9, 2.2, 0), []);
+
+    const raycaster = useMemo(() => new Raycaster(), []);
+    const plane = useMemo(() => new Plane(new Vector3(0, 0, 1), 0), []);
+    const targetVector = useMemo(() => new Vector3(), []);
+
     const navState = useUIStore((state) => state.navState);
     const isLoginOpen = useUIStore((state) => state.isLoginOpen);
     const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
@@ -118,14 +126,6 @@ export default function Robot() {
         }
 
         // 3. Law of Cosines for internal angles
-        // c^2 = a^2 + b^2 - 2ab cos(C)
-        // Angle at Shoulder (alpha): angle between UpperArm and TargetVector
-        // dist^2 + UPPER^2 - 2(dist)(UPPER)cos(alpha) = LOWER^2??? NO.
-        // Triangle sides: a=UPPER, b=LOWER, c=DIST
-        // we want angle alpha (at shoulder, between c and a)
-        // b^2 = a^2 + c^2 - 2ac cos(alpha)
-        // cos(alpha) = (a^2 + c^2 - b^2) / (2ac)
-
         const cosAlpha = (UPPER_ARM_LENGTH * UPPER_ARM_LENGTH + dist * dist - IK_FOREARM_LENGTH * IK_FOREARM_LENGTH)
             / (2 * UPPER_ARM_LENGTH * dist);
 
@@ -133,58 +133,20 @@ export default function Robot() {
         const alpha = Math.acos(Math.max(-1, Math.min(1, cosAlpha)));
 
         // 4. Global angle of the Target Vector
-        // atan2(y, x) gives angle from X-axis. 
-        // Our arms hang down (-PI/2) at rest, but let's just calculate rotations relative to X-axis first.
         const theta = Math.atan2(dy, dx);
 
         // 5. Calculate final Joint Angles
-        // Shoulder Angle: theta +/- alpha (Left arm bends one way, Right arm bends the other?)
-        // Actually typically both elbows bend "outwards" or "downwards".
-        // Let's assume elbows bend "outwards" relative to the body?
-        // Let's try: Left arm elbow bends Left (Clockwise relative to vector?), Right arm elbow bends Right.
-
-        // Left Arm (on left side of screen): Elbow usually bends with negative angle relative to straight line?
-        // Let's try: Shoulder = theta + alpha * direction
-
         const direction = isLeft ? 1 : -1;
         const shoulderAngle = theta + (alpha * direction);
 
-        // Elbow Angle (beta): Angle at elbow between Upper and Lower.
-        // Derived from Law of Cosines for angle opposite to DIST? OR just geometry?
-        // Simple 2D geometry: The angle *change* at the elbow.
-        // If arm was straight, elbow angle = 0.
-        // The angle inside the triangle at the elbow (Gamma) is opposite to dist.
-        // c^2 = a^2 + b^2 - 2ab cos(Gamma) -> dist^2 = UPPER^2 + LOWER^2 - 2*UPPER*LOWER*cos(Gamma)
-        // cos(Gamma) = (UPPER^2 + LOWER^2 - dist^2) / (2*UPPER*LOWER)
         const cosGamma = (UPPER_ARM_LENGTH * UPPER_ARM_LENGTH + IK_FOREARM_LENGTH * IK_FOREARM_LENGTH - dist * dist)
             / (2 * UPPER_ARM_LENGTH * IK_FOREARM_LENGTH);
         const gamma = Math.acos(Math.max(-1, Math.min(1, cosGamma)));
 
-        // The actual rotation of the forearm relative to upper arm is (PI - Gamma) * direction? 
-        // Or just Gamma?
-        // If triangles is folded (dist=0), Gamma=0? No, Gamma=180?
-        // If dist = max, Gamma = 180 (straight line).
-        // If arm is straight, we want local rotation 0.
-        // So ElbowLocalRotation = Gamma - PI.
         const elbowAngle = (gamma - Math.PI) * direction * -1; // Tune this direction
-
-        // Correction for T-Pose/Rest Pose assumptions
-        // Our mesh groups are likely oriented: Y-up or something? 
-        // Let's assume standard 0-rotation points UP or RIGHT?
-        // For the arm groups defined below:
-        // Shoulder Group: Positioned. Inside it, Upper Mesh.
-        // We will apply rotation.z to Step Group.
-        // To make 0 be "Down", we might need offset.
-        // But `Math.atan2` gives 0 for Right, PI/2 for Up, -PI/2 for Down.
-        // So we can apply calculating directly to Z rotation if 0 means Right.
 
         return { shoulderAngle, elbowAngle };
     };
-
-    // Raycasting for accurate mouse tracking
-    const raycaster = new THREE.Raycaster();
-    const plane = new THREE.Plane(new Vector3(0, 0, 1), 0); // Plane at Z=0 normal to Z-axis
-    const targetVector = new Vector3();
 
     useFrame((state) => {
         // --- LOW POWER MODE CHECK ---
@@ -231,24 +193,8 @@ export default function Robot() {
         const navState = useUIStore.getState().navState; // Read fresh state
         if (navState === 'redirecting') return;
 
-        // Paused if login is open (and not navigating)
-        // if (isLoginOpen && navState === 'idle') return; // This is now covered by the above checks
-
         let targetX = state.mouse.x;
         let targetY = state.mouse.y;
-
-        // --- ANIMATION OVERRIDE ---
-        if (navState === 'grabbing') {
-            // Hands move to center of screen (holding the card sides)
-            // World Center is roughly (0, 0)
-            // Left Hand -> (-2, 0)
-            // Right Hand -> (2, 0)
-            // Head looks at center
-
-            // We'll lerp the stored "mouse" values effectively 
-            // BUT our IK loop uses `targetVector` from raycast.
-            // Let's override worldX/worldY directly.
-        }
 
         const mouse = state.mouse;
 
@@ -263,9 +209,6 @@ export default function Robot() {
         if (navState === 'grabbing') {
             worldX = 0;
             worldY = 0; // Look at center
-            // Actual Hand Targets handled locally below?
-            // No, the IK loop uses mouse.x/y for specific arm logic.
-            // Let's force "activation" of both arms.
         } else if (navState === 'expanding') {
             worldX = 0;
             worldY = 0;
@@ -295,7 +238,6 @@ export default function Robot() {
                     ikTargetY = 0;
                 }
 
-                // Correct the "direction" logic: 
                 const { shoulderAngle, elbowAngle } = solveIK(ikTargetX, ikTargetY, LEFT_SHOULDER_POS, true);
 
                 // Apply interpolations (Add PI/2 to align Y-up cylinder with X-axis angle)
@@ -465,4 +407,3 @@ export default function Robot() {
         </group>
     );
 }
-

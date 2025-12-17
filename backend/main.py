@@ -1,12 +1,31 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, RedirectResponse
+from contextlib import asynccontextmanager
 from pydantic import BaseModel, Field
 from typing import List
 import json
 import os
 import html
+import random
+from datetime import datetime
+import uuid
+import hashlib
+import shutil
+import aiofiles
+import httpx
+from urllib.parse import urlparse
+import ipaddress
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    app.state.http_client = httpx.AsyncClient(follow_redirects=True)
+    yield
+    # Shutdown
+    await app.state.http_client.aclose()
+
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     "http://localhost:3000",
@@ -21,6 +40,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Helper for paths ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def get_path(filename):
+    return os.path.join(BASE_DIR, filename)
+
 # --- Data Models ---
 class NavItem(BaseModel):
     label: str
@@ -33,7 +58,7 @@ class NavigationData(BaseModel):
     isDebugMode: bool = False
 
 # --- Storage ---
-DATA_FILE = "navigation_data.json"
+DATA_FILE = get_path("navigation_data.json")
 
 def load_data():
     if not os.path.exists(DATA_FILE):
@@ -55,8 +80,11 @@ def load_data():
         return json.load(f)
 
 def save_data(data):
-    with open(DATA_FILE, "w") as f:
+    # Atomic write
+    temp_file = f"{DATA_FILE}.tmp"
+    with open(temp_file, "w") as f:
         json.dump(data, f, indent=4)
+    os.replace(temp_file, DATA_FILE)
 
 @app.get("/")
 def read_root():
@@ -74,7 +102,7 @@ def update_navigation(data: NavigationData):
     return {"status": "success", "data": data_dict}
 
 # --- Owner Verification ---
-OWNERS_FILE = "owners.json"
+OWNERS_FILE = get_path("owners.json")
 
 def load_owners():
     if not os.path.exists(OWNERS_FILE):
@@ -109,12 +137,12 @@ def submit_feedback(req: FeedbackRequest):
     feedback_entry = {
         "message": safe_message,
         "contact": safe_contact,
-        "timestamp": "Now", # In a real app, use datetime
+        "timestamp": datetime.now().isoformat(),
         "status": "Logged"
     }
 
     # Log to file (Acts as an inbox)
-    FEEDBACK_FILE = "feedback_log.json"
+    FEEDBACK_FILE = get_path("feedback_log.json")
     existing_feedback = []
     if os.path.exists(FEEDBACK_FILE):
         with open(FEEDBACK_FILE, "r") as f:
@@ -125,8 +153,11 @@ def submit_feedback(req: FeedbackRequest):
     
     existing_feedback.append(feedback_entry)
     
-    with open(FEEDBACK_FILE, "w") as f:
+    # Atomic write
+    temp_file = f"{FEEDBACK_FILE}.tmp"
+    with open(temp_file, "w") as f:
         json.dump(existing_feedback, f, indent=4)
+    os.replace(temp_file, FEEDBACK_FILE)
 
     print(f"--- FEEDBACK SAVED ---")
     print(f"Entry: {feedback_entry}")
@@ -134,12 +165,9 @@ def submit_feedback(req: FeedbackRequest):
     
     return {"status": "success", "message": "Feedback saved and owners notified"}
 
-import random
-from datetime import datetime
-import uuid
 
 # --- Photos System ---
-PHOTOS_FILE = "photos_data.json"
+PHOTOS_FILE = get_path("photos_data.json")
 # Placeholder: Replace with your actual Supabase Project URL later
 SUPABASE_STORAGE_URL = "https://[YOUR-PROJECT-ID].supabase.co/storage/v1/object/public/gallery/"
 
@@ -152,6 +180,13 @@ def process_url(url):
     if url.startswith("http"):
         return url
     return f"{SUPABASE_STORAGE_URL.rstrip('/')}/{url.lstrip('/')}"
+
+def save_photos_data(data):
+    # Atomic write
+    temp_file = f"{PHOTOS_FILE}.tmp"
+    with open(temp_file, "w") as f:
+        json.dump(data, f, indent=4)
+    os.replace(temp_file, PHOTOS_FILE)
 
 @app.get("/api/photos")
 def get_photos():
@@ -232,8 +267,7 @@ def shuffle_highlights():
     new_seed = random.randint(1, 1000000)
     data["shuffleSeed"] = new_seed
     
-    with open(PHOTOS_FILE, "w") as f:
-        json.dump(data, f, indent=4)
+    save_photos_data(data)
         
     return {"status": "success", "seed": new_seed}
 
@@ -262,8 +296,7 @@ def create_album(req: CreateAlbumRequest):
         
     data["albums"].insert(0, new_album) # Add to top
     
-    with open(PHOTOS_FILE, "w") as f:
-        json.dump(data, f, indent=4)
+    save_photos_data(data)
         
     return {"status": "success", "album": new_album}
 
@@ -291,8 +324,7 @@ def update_album(album_id: str, req: UpdateAlbumRequest):
             break
             
     if found:
-        with open(PHOTOS_FILE, "w") as f:
-            json.dump(data, f, indent=4)
+        save_photos_data(data)
         return {"status": "success"}
     return {"status": "error", "message": "Album not found"}
 
@@ -324,8 +356,7 @@ def add_photo_to_album(album_id: str, req: AddPhotoRequest):
             break
             
     if found:
-        with open(PHOTOS_FILE, "w") as f:
-            json.dump(data, f, indent=4)
+        save_photos_data(data)
         return {"status": "success", "photo": new_photo}
     return {"status": "error", "message": "Album not found"}
 
@@ -343,8 +374,7 @@ def delete_album(album_id: str):
     data["albums"] = [a for a in albums if a["id"] != album_id]
     
     if len(data["albums"]) < initial_count:
-        with open(PHOTOS_FILE, "w") as f:
-            json.dump(data, f, indent=4)
+        save_photos_data(data)
         return {"status": "success"}
         
     return {"status": "error", "message": "Album not found"}
@@ -382,28 +412,22 @@ def delete_photo_from_album(album_id: str, photo_id: str):
             album["photos"] = [p for p in album["photos"] if p["id"] != photo_id]
             
             if len(album["photos"]) < initial_count:
-                with open(PHOTOS_FILE, "w") as f:
-                    json.dump(data, f, indent=4)
+                save_photos_data(data)
                 return {"status": "success"}
             return {"status": "error", "message": "Photo not found"}
             
     if not found_album:
         return {"status": "error", "message": "Album not found"}
-# --- Proxy & Cache System ---
-import hashlib
-import urllib.request
-import shutil
-from fastapi.responses import FileResponse
 
-CACHE_DIR = "cache"
+# --- Proxy & Cache System ---
+
+CACHE_DIR = get_path("cache")
 
 # Ensure cache dir exists
 if not os.path.exists(CACHE_DIR):
     os.makedirs(CACHE_DIR)
 
-# Clear cache on startup (simulating "delete when website is closed/restarted")
-# In a real app we might want to do this on shutdown or use a lifespan event, 
-# but simply clearing it here ensures fresh start when running this script.
+# Clear cache on startup
 for filename in os.listdir(CACHE_DIR):
     file_path = os.path.join(CACHE_DIR, filename)
     try:
@@ -414,14 +438,51 @@ for filename in os.listdir(CACHE_DIR):
     except Exception as e:
         print(f"Failed to delete {file_path}. Reason: {e}")
 
+def is_safe_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+
+        # Resolve hostname to IP
+        try:
+            ip_address = ipaddress.ip_address(hostname)
+        except ValueError:
+            # If it's a domain name, we might want to resolve it, but that adds DNS overhead.
+            # A simple heuristic is to block 'localhost', '127.0.0.1', etc.
+            # Ideally we would resolve it, but here we will just block common private ranges string-wise if it is an IP,
+            # and rely on the fact that general domains are usually public.
+            # However, for robust SSRF, DNS resolution is needed.
+            # For this simple implementation, we will explicitly block localhost and internal IPs.
+            if hostname in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
+                return False
+            return True
+
+        if ip_address.is_private or ip_address.is_loopback or ip_address.is_link_local:
+            return False
+
+        return True
+    except:
+        return False
+
 @app.get("/api/proxy")
-def proxy_image(url: str):
+async def proxy_image(url: str, request: Request):
     """
-    Downloads and caches the image from the given URL.
+    Downloads and caches the image from the given URL using async I/O.
     Serves the local file.
+    Includes SSRF protection.
     """
     if not url:
         raise HTTPException(status_code=400, detail="Missing URL")
+
+    # SSRF Protection
+    if not is_safe_url(url):
+        print(f"Blocked Unsafe URL: {url}")
+        raise HTTPException(status_code=403, detail="URL not allowed")
 
     # Generate filename from hash of URL
     url_hash = hashlib.md5(url.encode('utf-8')).hexdigest()
@@ -441,27 +502,28 @@ def proxy_image(url: str):
     temp_path = file_path + ".tmp"
     
     try:
-        req = urllib.request.Request(
-            url, 
-            data=None, 
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-        )
-        with urllib.request.urlopen(req) as response:
-            # Check expected size
-            content_length = response.getheader('Content-Length')
-            
-            with open(temp_path, 'wb') as out_file:
-                shutil.copyfileobj(response, out_file)
-            
-            # Verify size if Content-Length provided
-            if content_length:
-                expected_size = int(content_length)
-                actual_size = os.path.getsize(temp_path)
-                if actual_size != expected_size:
-                    raise Exception(f"Incomplete download: Expected {expected_size}, got {actual_size}")
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+
+        client = request.app.state.http_client
+        response = await client.get(url, headers=headers)
         
+        if response.status_code != 200:
+            print(f"Proxy failed to fetch {url}: {response.status_code}")
+            return RedirectResponse(url=url)
+
+        async with aiofiles.open(temp_path, 'wb') as out_file:
+            await out_file.write(response.content)
+
+        # Verify size if Content-Length provided
+        content_length = response.headers.get('content-length')
+        if content_length:
+            expected_size = int(content_length)
+            actual_size = os.path.getsize(temp_path)
+            if actual_size != expected_size:
+                    raise Exception(f"Incomplete download: Expected {expected_size}, got {actual_size}")
+
         # Atomic move
         os.replace(temp_path, file_path)
             
@@ -472,5 +534,4 @@ def proxy_image(url: str):
         if os.path.exists(temp_path):
             os.remove(temp_path)
             
-        from starlette.responses import RedirectResponse
         return RedirectResponse(url=url)
