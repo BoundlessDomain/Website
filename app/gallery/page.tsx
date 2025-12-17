@@ -34,6 +34,8 @@ export default function GalleryPage() {
             }
         } catch (err) {
             console.error("Failed to load gallery", err);
+            // Fallback to empty data so the UI still renders (and allows Owner to add albums)
+            setData({ highlights: [], albums: [] });
         } finally {
             setLoading(false);
         }
