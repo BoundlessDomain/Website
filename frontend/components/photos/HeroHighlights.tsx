@@ -11,13 +11,15 @@ interface Highlight {
     type: 'image' | 'video';
     url: string;
     caption: string;
+    albumId?: string;
 }
 
 interface HeroHighlightsProps {
     highlights: Highlight[];
+    onSelectHighlight?: (albumId: string, photoId: string) => void;
 }
 
-export default function HeroHighlights({ highlights }: HeroHighlightsProps) {
+export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHighlightsProps) {
     const isOwner = useUIStore((state) => state.isOwner);
     const [shuffling, setShuffling] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -69,7 +71,9 @@ export default function HeroHighlights({ highlights }: HeroHighlightsProps) {
                     initial={isLowPowerMode ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={isLowPowerMode ? { duration: 0 } : { duration: 0.8 }}
-                    className="md:col-span-2 h-full relative rounded-2xl overflow-hidden group border border-white/5 shadow-2xl"
+                    className="md:col-span-2 h-full relative rounded-2xl overflow-hidden group border border-white/5 shadow-2xl cursor-pointer"
+                    onClick={() => mainHighlight.albumId && onSelectHighlight?.(mainHighlight.albumId, mainHighlight.id)}
+                    whileHover={!isLowPowerMode ? { scale: 0.99 } : undefined}
                 >
                     <img
                         src={mainHighlight.url}
@@ -94,7 +98,9 @@ export default function HeroHighlights({ highlights }: HeroHighlightsProps) {
                             initial={isLowPowerMode ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={isLowPowerMode ? { duration: 0 } : { duration: 0.5, delay: 0.2 + (i * 0.2) }}
-                            className="flex-1 relative rounded-2xl overflow-hidden group border border-white/5"
+                            className="flex-1 relative rounded-2xl overflow-hidden group border border-white/5 cursor-pointer"
+                            onClick={() => item.albumId && onSelectHighlight?.(item.albumId, item.id)}
+                            whileHover={!isLowPowerMode ? { scale: 0.98 } : undefined}
                         >
                             <img
                                 src={item.url}

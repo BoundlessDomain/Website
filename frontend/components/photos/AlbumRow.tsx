@@ -2,30 +2,12 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import AlbumModal from "./AlbumModal";
-import { useUIStore } from "@/store/uiStore";
-import { Plus } from "lucide-react";
-import clsx from "clsx";
-
-interface Photo {
-    id: string;
-    url: string;
-}
-
-interface Album {
-    id: string;
-    title: string;
-    coverUrl: string;
-    date: string;
-    photos: Photo[];
-}
-
 interface AlbumRowProps {
     albums: Album[];
+    onSelectAlbum: (album: Album) => void;
 }
 
-export default function AlbumRow({ albums }: AlbumRowProps) {
-    const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+export default function AlbumRow({ albums, onSelectAlbum }: AlbumRowProps) {
     const isOwner = useUIStore((state) => state.isOwner);
     const [mounted, setMounted] = useState(false);
 
@@ -72,7 +54,7 @@ export default function AlbumRow({ albums }: AlbumRowProps) {
                     <motion.div
                         key={album.id}
                         layoutId={!isLowPowerMode ? `album-card-${album.id}` : undefined}
-                        onClick={() => setSelectedAlbum(album)}
+                        onClick={() => onSelectAlbum(album)}
                         whileHover={!isLowPowerMode ? { y: -10 } : undefined}
                         className="cursor-pointer w-full"
                     >
@@ -99,12 +81,6 @@ export default function AlbumRow({ albums }: AlbumRowProps) {
                     </motion.div>
                 ))}
             </div>
-
-            <AnimatePresence>
-                {selectedAlbum && (
-                    <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} />
-                )}
-            </AnimatePresence>
         </div>
     );
 }

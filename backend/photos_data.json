@@ -27,23 +27,13 @@
             "date": "January 2000",
             "photos": [
                 {
-                    "id": "adc174e8-dbe8-45de-adbd-2ad4f4fb9e5f",
-                    "url": "https://jywsejauxoxnwndocyee.supabase.co/storage/v1/object/public/gallery/Test_Album/1765926842302_1.jpg",
+                    "id": "1627e667-4bac-4f92-bb31-febb501ca5f1",
+                    "url": "https://jywsejauxoxnwndocyee.supabase.co/storage/v1/object/public/gallery/Test_Album/1765929644395_4ux6up.jpg",
                     "type": "image"
                 },
                 {
-                    "id": "55bb6fbd-51b4-4a05-a136-1b99c9d7f637",
-                    "url": "https://jywsejauxoxnwndocyee.supabase.co/storage/v1/object/public/gallery/Test_Album/1765926967413_0.jpg",
-                    "type": "image"
-                },
-                {
-                    "id": "216ca7ed-56b4-4eb2-b1b6-d7fd7df4eca1",
-                    "url": "https://jywsejauxoxnwndocyee.supabase.co/storage/v1/object/public/gallery/Test_Album/1765927043013_1.jpg",
-                    "type": "image"
-                },
-                {
-                    "id": "f68ae5ca-74a9-4b96-9ac3-8eeaec915d8e",
-                    "url": "https://jywsejauxoxnwndocyee.supabase.co/storage/v1/object/public/gallery/Test_Album/1765927088741_2.jpg",
+                    "id": "21ae1f22-3a87-4d99-b4c3-5d4dbe7c8f1b",
+                    "url": "https://jywsejauxoxnwndocyee.supabase.co/storage/v1/object/public/gallery/Test_Album/1765929644339_st25dh.jpg",
                     "type": "image"
                 }
             ]
@@ -117,5 +107,5 @@
             ]
         }
     ],
-    "shuffleSeed": 413821
+    "shuffleSeed": 921408
 }

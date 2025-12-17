@@ -24,14 +24,15 @@ interface Album {
 interface AlbumModalProps {
     album: Album | null;
     onClose: () => void;
+    initialPhotoId?: string;
+    onAlbumUpdate?: () => void;
 }
 
-export default function AlbumModal({ album, onClose }: AlbumModalProps) {
+export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpdate }: AlbumModalProps) {
     const isOwner = useUIStore((state) => state.isOwner);
     const [mounted, setMounted] = useState(false);
 
     // Local state to manage the album data without reloading
-    // Initialize with prop to avoid initial null if possible, though parent checks usually ensure it
     const [currentAlbum, setCurrentAlbum] = useState<Album | null>(album);
 
     // Local state for inline editing
@@ -56,25 +57,36 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
     // Sync state when album opens
     useEffect(() => {
         if (album) {
-            // Only update if it's different to prevent loops/resets if we were already editing
-            // But usually this effect is for when the modal *opens* or prop changes.
-            // Since we init state from prop, this might be redundant for first render, but good for updates.
             if (!currentAlbum || currentAlbum.id !== album.id) {
                 setCurrentAlbum(album);
                 setTitle(album.title);
                 setDate(album.date);
 
-                // PRELOAD IMAGES: Download all photos client side for smoother scrolling
+                // PRELOAD IMAGES
                 album.photos.forEach(photo => {
                     if (photo.type !== "video") {
                         const img = new Image();
-                        // Use Proxy
                         img.src = `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/proxy?url=${encodeURIComponent(photo.url)}`;
                     }
                 });
             }
         }
     }, [album, currentAlbum]);
+
+    // Scroll to initial photo
+    useEffect(() => {
+        if (initialPhotoId && mounted) {
+            setTimeout(() => {
+                const element = document.getElementById(`photo-${initialPhotoId}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Add a temporary highlight
+                    element.classList.add('ring-4', 'ring-primary');
+                    setTimeout(() => element.classList.remove('ring-4', 'ring-primary'), 2000);
+                }
+            }, 500); // Wait for modal animation/render
+        }
+    }, [initialPhotoId, mounted]);
 
     if (!currentAlbum) return null;
 
@@ -89,6 +101,7 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date })
                 });
+                onAlbumUpdate?.();
             } catch (e) { console.error(e); }
         }
     };
@@ -109,6 +122,7 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title, coverUrl: photo.url, date })
                 });
+                onAlbumUpdate?.();
             } catch (e) {
                 console.error(e);
             }
@@ -121,6 +135,9 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
         e.stopPropagation(); // Prevent opening/selecting
         if (!confirm("Are you sure you want to delete this photo?")) return;
 
+        // Find photo URL to delete from Supabase
+        const photoToDelete = currentAlbum.photos.find(p => p.id === photoId);
+
         // Optimistic Update: Remove instantaneously
         setCurrentAlbum(prev => prev ? ({
             ...prev,
@@ -128,9 +145,26 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
         }) : null);
 
         try {
+            // 1. Delete from Supabase Storage
+            if (photoToDelete) {
+                try {
+                    const urlObj = new URL(photoToDelete.url);
+                    const pathParts = urlObj.pathname.split('/gallery/');
+                    if (pathParts.length > 1) {
+                        const storagePath = decodeURIComponent(pathParts[1]);
+                        const { error } = await supabase.storage.from('gallery').remove([storagePath]);
+                        if (error) console.error("Supabase delete error:", error);
+                    }
+                } catch (err) {
+                    console.warn("Failed to parse/delete Supabase file", err);
+                }
+            }
+
+            // 2. Delete from Backend (and Cache)
             await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}/photos/${photoId}`, {
                 method: 'DELETE',
             });
+            onAlbumUpdate?.(); // Notify parent to refresh data
         } catch (e) { console.error(e); }
     };
 
@@ -141,13 +175,55 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
             await fetch(`http://localhost:8000/api/photos/albums/${currentAlbum.id}`, {
                 method: 'DELETE',
             });
-            window.location.reload(); // Deleting the whole album still warrants a refresh or navigation
+            onClose();
+            onAlbumUpdate?.(); // Notify parent, don't force reload
         } catch (e) { console.error(e); }
     };
 
     // File Upload Logic
-    // Upload State moved to top
+    // ... compressImage ...
+    const compressImage = (file: File): Promise<File> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+                if (!ctx) { resolve(file); return; }
 
+                const MAX_WIDTH = 1920;
+                const MAX_HEIGHT = 1920;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob((blob) => {
+                    if (!blob) { resolve(file); return; }
+                    const compressedFile = new File([blob], file.name, {
+                        type: "image/jpeg",
+                        lastModified: Date.now(),
+                    });
+                    resolve(compressedFile);
+                }, "image/jpeg", 0.8);
+            };
+            img.onerror = () => resolve(file);
+        });
+    };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -164,6 +240,18 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                 const fileExt = file.name.split('.').pop();
                 const fileType = file.type.startsWith('video/') ? 'video' : 'image';
 
+                // OPTIMIZATION: Compress images before upload
+                let fileToUpload = file;
+                if (fileType === 'image') {
+                    try {
+                        // console.log(`[File ${i}] Compressing...`);
+                        fileToUpload = await compressImage(file);
+                        // console.log(`[File ${i}] Compressed...`);
+                    } catch (e) {
+                        console.warn("Compression failed, using original", e);
+                    }
+                }
+
                 const folderName = currentAlbum.title.trim().replace(/[^a-zA-Z0-9-_]/g, '_');
                 const uniqueId = Math.random().toString(36).substring(7);
                 const fileName = `${folderName}/${Date.now()}_${uniqueId}.${fileExt}`;
@@ -171,7 +259,7 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                 // 1. Upload to Supabase
                 const { error: uploadError } = await supabase.storage
                     .from('gallery')
-                    .upload(fileName, file);
+                    .upload(fileName, fileToUpload);
 
                 if (uploadError) throw uploadError;
 
@@ -189,8 +277,6 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
 
                 if (!res.ok) throw new Error(await res.text());
 
-                // Collect new photo data (we need the ID from backend but for now generate temp or use what we returned)
-                // To be accurate, we should get the ID from the response. The backend returns { "photo": { ... } }
                 const data = await res.json();
                 if (data.photo) {
                     newPhotos.push(data.photo);
@@ -206,6 +292,7 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                 ...prev,
                 photos: [...newPhotos, ...prev.photos] // Add new photos to top
             }) : null);
+            onAlbumUpdate?.(); // Refresh parent
 
             setIsUploading(false);
 
@@ -224,7 +311,12 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
     const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        >
             <div
                 className={clsx(
                     "absolute inset-0 bg-black/80",
@@ -235,9 +327,6 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
 
             <motion.div
                 layoutId={!isLowPowerMode ? `album-card-${currentAlbum.id}` : undefined}
-                initial={isLowPowerMode ? { opacity: 0 } : undefined}
-                animate={isLowPowerMode ? { opacity: 1 } : undefined}
-                exit={isLowPowerMode ? { opacity: 0 } : undefined}
                 className="bg-black/90 border border-white/10 w-full max-w-[95vw] h-[90vh] rounded-3xl overflow-hidden relative z-[101] flex flex-col shadow-2xl"
             >
                 {/* Header */}
@@ -378,6 +467,7 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                         {currentAlbum.photos.map((photo, i) => (
                             <motion.div
                                 key={photo.id}
+                                id={`photo-${photo.id}`}
                                 layout
                                 onClick={() => handlePhotoClick(photo)}
                                 initial={isLowPowerMode ? { opacity: 1 } : { opacity: 0, y: 20 }}
@@ -420,8 +510,8 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                                     <img
                                         src={`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/proxy?url=${encodeURIComponent(photo.url)}`}
                                         className={clsx(
-                                            "w-full h-auto object-contain block",
-                                            !isLowPowerMode && !isSelectingCover && "transition-transform duration-500 group-hover:scale-105"
+                                            "w-full h-auto object-contain block"
+                                            // Zoom removed here
                                         )}
                                         loading="eager" // Optimisation: Load immediately since we are preloading anyway
                                     />
@@ -435,6 +525,6 @@ export default function AlbumModal({ album, onClose }: AlbumModalProps) {
                     </div>
                 </div>
             </motion.div >
-        </div >
+        </motion.div >
     );
 }

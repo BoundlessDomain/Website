@@ -182,7 +182,8 @@ def get_photos():
                 "id": photo["id"],
                 "type": media_type,
                 "url": final_url,
-                "caption": title 
+                "caption": title,
+                "albumId": album["id"]
             })
     
     # 2. Select 3 random photos, seeded by today's date
@@ -400,8 +401,6 @@ def proxy_image(url: str):
     # Generate filename from hash of URL
     url_hash = hashlib.md5(url.encode('utf-8')).hexdigest()
     # Attempt to guess extension or default to .bin. 
-    # Proper way is checking Content-Type header but for simplicity we can try to parse url or use generic.
-    # If the URL has an extension, use it.
     ext = os.path.splitext(url.split("?")[0])[1]
     if not ext:
         ext = ".jpg" # Default fallback
@@ -409,13 +408,14 @@ def proxy_image(url: str):
     filename = f"{url_hash}{ext}"
     file_path = os.path.join(CACHE_DIR, filename)
 
-    # Check cache
+    # Check cache (Atomic check: if it exists, it is complete)
     if os.path.exists(file_path):
         return FileResponse(file_path)
 
-    # Download and cache
+    # Download to temp file first to avoid serving partial files
+    temp_path = file_path + ".tmp"
+    
     try:
-        # Use a user agent to avoid 403s from some strict servers (though Supabase usually fine)
         req = urllib.request.Request(
             url, 
             data=None, 
@@ -423,15 +423,29 @@ def proxy_image(url: str):
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
         )
-        with urllib.request.urlopen(req) as response, open(file_path, 'wb') as out_file:
-            shutil.copyfileobj(response, out_file)
+        with urllib.request.urlopen(req) as response:
+            # Check expected size
+            content_length = response.getheader('Content-Length')
+            
+            with open(temp_path, 'wb') as out_file:
+                shutil.copyfileobj(response, out_file)
+            
+            # Verify size if Content-Length provided
+            if content_length:
+                expected_size = int(content_length)
+                actual_size = os.path.getsize(temp_path)
+                if actual_size != expected_size:
+                    raise Exception(f"Incomplete download: Expected {expected_size}, got {actual_size}")
+        
+        # Atomic move
+        os.replace(temp_path, file_path)
             
         return FileResponse(file_path)
     except Exception as e:
         print(f"Proxy Error for {url}: {e}")
-        # If download fails, redirect or 404. 
-        # Redirecting to original URL is a safe fallback if backend fails to download.
-        # But we can't redirect with FileResponse return type expected implicitly.
-        # Let's return error or try to redirect (302).
+        # Clean up temp file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+            
         from starlette.responses import RedirectResponse
         return RedirectResponse(url=url)
