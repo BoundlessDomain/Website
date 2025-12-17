@@ -18,8 +18,11 @@ from urllib.parse import urlparse
 import ipaddress
 from db import get_supabase
 
-# Initialize Supabase
-supabase_client = get_supabase()
+try:
+    supabase_client = get_supabase()
+except Exception as e:
+    print(f"Supabase Init Error: {e}")
+    supabase_client = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -73,6 +76,10 @@ def process_url(url):
 @app.get("/")
 def read_root():
     return {"status": "active", "message": "Welcome to the Boundless Domain API"}
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok", "service": "backend", "timestamp": str(datetime.now())}
 
 # --- Navigation ---
 class NavItem(BaseModel):
@@ -145,8 +152,10 @@ def verify_owner(req: VerifyOwnerRequest):
         # 2. Database Role (Future Scalability)
         # For other users, we check the 'is_admin' flag in the 'profiles' table.
         # This allows you to manage admins via Supabase dashboard without code changes.
-        # Check profiles table in Supabase
-        # We use the 'id' (UUID) to query the profile
+        # 2. Database Role (Future Scalability)
+        if not supabase_client:
+            return {"isOwner": False, "error": "Database not connected"}
+
         res = supabase_client.table("profiles").select("is_admin").eq("id", req.id).execute()
         
         if res.data and len(res.data) > 0:
