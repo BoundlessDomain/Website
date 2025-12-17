@@ -158,8 +158,18 @@ class VerifyOwnerRequest(BaseModel):
     id: str # User UUID
     email: Optional[str] = None # Backwards compatibility/logging
 
-@app.post("/api/verify-owner")
-def verify_owner(req: VerifyOwnerRequest):
+@app.api_route("/api/verify-owner", methods=["GET", "POST"])
+async def verify_owner(request: Request):
+    if request.method == "GET":
+        return {"status": "ready", "message": "Verify Owner Endpoint is Accessible"}
+
+    # Parse body for POST
+    try:
+        body = await request.json()
+        req = VerifyOwnerRequest(**body)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Bad Request: {e}")
+
     supabase_client = get_supabase()
     try:
         if req.email:
@@ -169,9 +179,6 @@ def verify_owner(req: VerifyOwnerRequest):
             if normalized_email in [e.lower() for e in ADMIN_EMAILS]:
                 return {"isOwner": True}
 
-        # 2. Database Role (Future Scalability)
-        # For other users, we check the 'is_admin' flag in the 'profiles' table.
-        # This allows you to manage admins via Supabase dashboard without code changes.
         # 2. Database Role (Future Scalability)
         if not supabase_client:
             return {"isOwner": False, "error": "Database not connected"}
