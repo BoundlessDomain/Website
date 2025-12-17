@@ -4,14 +4,9 @@ export const getApiUrl = () => {
         return process.env.NEXT_PUBLIC_API_URL;
     }
 
-    // 2. Client-Side Detection
-    if (typeof window !== "undefined") {
-        const hostname = window.location.hostname;
-        if (hostname === "localhost" || hostname === "127.0.0.1") {
-            // Local Development: Python backend usually on 8000
-            return "http://127.0.0.1:8000";
-        }
-    }
+    // 2. Production / Relative Path
+    // Since we are not running localhost backend anymore, we rely on Vercel Rewrites or same-domain API.
+    return "";
 
     // 3. Production (Same Domain / Vercel Rewrites)
     // If running on Vercel without env var, valid requests are relative: /api/...
