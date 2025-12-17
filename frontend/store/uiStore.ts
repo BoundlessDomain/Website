@@ -48,7 +48,7 @@ interface UIState {
 const defaultLeftItems: NavItemState[] = [
     { label: "ARTICLES", iconName: "FileText", href: "/articles" },
     { label: "RECIPES", iconName: "Utensils", href: "/recipes" },
-    { label: "PHOTOS", iconName: "Camera", href: "/photos" },
+    { label: "GALLERY", iconName: "Camera", href: "/gallery" },
 ];
 
 const defaultRightItems: NavItemState[] = [
