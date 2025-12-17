@@ -20,14 +20,16 @@ export default function TopBar() {
     const setLoginOpen = useUIStore((state) => state.setLoginOpen);
     const [user, setUser] = useState<SupabaseUser | null>(null);
 
+    const isOwner = useUIStore((state) => state.isOwner);
     const setOwner = useUIStore((state) => state.setOwner);
     const setLoggedIn = useUIStore((state) => state.setLoggedIn);
 
     useEffect(() => {
         const validateUser = async (session: any) => {
             const email = session?.user?.email;
+            const id = session?.user?.id;
 
-            if (!email) {
+            if (!email || !id) {
                 console.log("[Auth] Session cleared. Resetting Global State.");
                 setUser(null);
                 setOwner(false);
@@ -43,7 +45,7 @@ export default function TopBar() {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/verify-owner`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
+                    body: JSON.stringify({ id, email })
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -119,7 +121,7 @@ export default function TopBar() {
                             <span className="text-primary-text font-bold tracking-wider text-sm drop-shadow-[0_0_5px_var(--primary-glow)]">
                                 Hello, {user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.username || getNameFromEmail(user.email)}
                             </span>
-                            {isAdmin(user.email) && (
+                            {isOwner && (
                                 <span className="text-[10px] bg-red-600/20 text-red-400 border border-red-500/50 px-2 py-0.5 rounded-full font-bold tracking-widest mt-1 shadow-[0_0_10px_rgba(220,38,38,0.4)]">
                                     OWNER ACCESS
                                 </span>

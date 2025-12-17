@@ -129,22 +129,24 @@ def update_navigation(data: NavigationData):
 
 # --- Owner Verification ---
 class VerifyOwnerRequest(BaseModel):
-    email: str
+    id: str # User UUID
+    email: Optional[str] = None # Backwards compatibility/logging
 
 @app.post("/api/verify-owner")
 def verify_owner(req: VerifyOwnerRequest):
-    # For now, simplistic check or check a 'profiles' table if we migrated owners there.
-    # Let's use a hardcoded fallback or checking 'profiles' is_admin
     try:
-        res = supabase_client.table("profiles").select("is_admin").eq("id", req.email).execute() # Using email as ID is risky if UUIDs used, but let's assume loose check for now or fallback.
-        # Better: Check existing owners.json logic but in DB?
-        # Let's stick to the JSON file logic if we didn't migrate it, OR just return False safely.
-        # Actually, let's implement a safe check:
-        # Check against a known list of admins in site_settings or similar?
-        # Reverting to the logic: "Home.BobbyYu@gmail.com" is owner.
-        is_owner = req.email.strip().lower() in ["home.bobbyyu@gmail.com", "admin@example.com", "project.bobbyyu@gmail.com"]
-        return {"isOwner": is_owner}
-    except:
+        # Check profiles table in Supabase
+        # We use the 'id' (UUID) to query the profile
+        res = supabase_client.table("profiles").select("is_admin").eq("id", req.id).execute()
+        
+        if res.data and len(res.data) > 0:
+            is_admin = res.data[0].get("is_admin", False)
+            return {"isOwner": is_admin}
+            
+        # Fallback: If no profile found (e.g. trigger didn't run), not an owner.
+        return {"isOwner": False}
+    except Exception as e:
+        print(f"Owner verify error: {e}")
         return {"isOwner": False}
 
 # --- Gallery ---
