@@ -87,7 +87,7 @@ export const useUIStore = create<UIState>()(
             setOwner: (isOwner) => set({ isOwner }),
 
             isLoggedIn: false,
-            isLoggedIn: false,
+
             setLoggedIn: (isLoggedIn) => set({ isLoggedIn }),
 
             authDebugLog: "Init...",
