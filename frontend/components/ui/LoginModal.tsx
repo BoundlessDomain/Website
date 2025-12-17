@@ -6,6 +6,7 @@ import { useState } from "react";
 import clsx from "clsx";
 import { supabase } from "@/utils/supabase";
 import { useUIStore } from "@/store/uiStore";
+import { getApiUrl } from "@/utils/api";
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -62,9 +63,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 });
                 if (error) throw error;
 
+
                 // --- OWNER CHECK ---
                 try {
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/verify-owner`, {
+                    const res = await fetch(`${getApiUrl()}/api/verify-owner`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ id: data.user?.id, email })

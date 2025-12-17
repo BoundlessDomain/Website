@@ -9,6 +9,7 @@ import { supabase } from "@/utils/supabase";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { isAdmin } from "@/utils/roles";
 import { useUIStore } from "@/store/uiStore";
+import { getApiUrl } from "@/utils/api";
 
 function getNameFromEmail(email?: string) {
     if (!email) return "User";
@@ -40,9 +41,10 @@ export default function TopBar() {
             setUser(session.user);
             setLoggedIn(true);
 
+
             // Verify Owner
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/verify-owner`, {
+                const res = await fetch(`${getApiUrl()}/api/verify-owner`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id, email })

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { getApiUrl } from "@/utils/api";
 
 export interface NavItemState {
     label: string;
@@ -87,9 +88,10 @@ export const useUIStore = create<UIState>()(
             leftNavItems: defaultLeftItems,
             rightNavItems: defaultRightItems,
 
+
             fetchNavData: async () => {
                 try {
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/navigation`);
+                    const res = await fetch(`${getApiUrl()}/api/navigation`);
                     if (res.ok) {
                         const data = await res.json();
                         set({
@@ -116,7 +118,7 @@ export const useUIStore = create<UIState>()(
 
                 // Sync to Backend
                 try {
-                    await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/navigation`, {
+                    await fetch(`${getApiUrl()}/api/navigation`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -134,7 +136,7 @@ export const useUIStore = create<UIState>()(
                 set({ isDebugMode: debug });
                 const state = get();
                 try {
-                    await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/navigation`, {
+                    await fetch(`${getApiUrl()}/api/navigation`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
