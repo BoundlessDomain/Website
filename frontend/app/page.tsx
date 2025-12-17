@@ -1,5 +1,12 @@
-import RobotScene from "@/components/canvas/RobotScene";
-import NavigationMenu from "@/components/ui/NavigationMenu";
+'use client';
+
+import dynamic from 'next/dynamic';
+
+// Lazy load the robot scene and DISABLE server-side rendering
+const RobotScene = dynamic(() => import('@/components/canvas/RobotScene'), {
+    ssr: false,
+    loading: () => <div className="h-full w-full bg-slate-950" /> // Optional loading placeholder
+});
 
 export default function Home() {
     return (
@@ -7,7 +14,7 @@ export default function Home() {
             <div className="absolute top-0 left-0 w-full h-full z-0">
                 <RobotScene />
             </div>
-            <NavigationMenu />
+            {/* Your other components */}
         </main>
     );
 }
