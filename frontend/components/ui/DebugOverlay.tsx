@@ -27,7 +27,8 @@ export default function DebugOverlay() {
         return () => clearInterval(interval);
     }, [isDebugMode]);
 
-    if (!isDebugMode) return null;
+    // FORCE DEBUG: Always show overlay for troubleshooting
+    // if (!isDebugMode) return null;
 
     return (
         <div className="fixed bottom-4 left-4 z-[9999] bg-black/80 text-white p-3 rounded-lg text-xs pointer-events-none border border-white/10 shadow-xl font-mono">
