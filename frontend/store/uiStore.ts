@@ -149,7 +149,7 @@ export const useUIStore = create<UIState>()(
             }
         }),
         {
-            name: 'ui-storage',
+            name: 'ui-storage-v2',
             // Persist relevant fields locally as cache? 
             // Actually, let's NOT persist navItems locally so we always fetch fresh from server?
             // But for offline support/speed it's nice.

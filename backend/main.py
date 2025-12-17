@@ -168,8 +168,8 @@ def submit_feedback(req: FeedbackRequest):
     return {"status": "success", "message": "Feedback saved and owners notified"}
 
 
-# --- Photos System ---
-PHOTOS_FILE = get_path("photos_data.json")
+# --- Gallery System ---
+PHOTOS_FILE = get_path("gallery_data.json")
 # Placeholder: Replace with your actual Supabase Project URL later
 SUPABASE_STORAGE_URL = "https://[YOUR-PROJECT-ID].supabase.co/storage/v1/object/public/gallery/"
 
@@ -190,7 +190,7 @@ def save_photos_data(data):
         json.dump(data, f, indent=4)
     os.replace(temp_file, PHOTOS_FILE)
 
-@app.get("/api/photos")
+@app.get("/api/gallery")
 def get_photos():
     if not os.path.exists(PHOTOS_FILE):
         return {"highlights": [], "albums": []}
@@ -257,7 +257,7 @@ def get_photos():
         
     return data
 
-@app.post("/api/photos/highlights/shuffle")
+@app.post("/api/gallery/highlights/shuffle")
 def shuffle_highlights():
     if not os.path.exists(PHOTOS_FILE):
         return {"status": "error"}
@@ -277,7 +277,7 @@ class CreateAlbumRequest(BaseModel):
     title: str
     coverUrl: str = ""
 
-@app.post("/api/photos/albums")
+@app.post("/api/gallery/albums")
 def create_album(req: CreateAlbumRequest):
     if not os.path.exists(PHOTOS_FILE):
         return {"status": "error"}
@@ -307,7 +307,7 @@ class UpdateAlbumRequest(BaseModel):
     coverUrl: str
     date: str = None # Optional, if not provided, keep existing
 
-@app.put("/api/photos/albums/{album_id}")
+@app.put("/api/gallery/albums/{album_id}")
 def update_album(album_id: str, req: UpdateAlbumRequest):
     if not os.path.exists(PHOTOS_FILE):
         return {"status": "error"}
@@ -334,7 +334,7 @@ class AddPhotoRequest(BaseModel):
     url: str
     type: str = "image"
 
-@app.post("/api/photos/albums/{album_id}/photos")
+@app.post("/api/gallery/albums/{album_id}/photos")
 def add_photo_to_album(album_id: str, req: AddPhotoRequest):
     if not os.path.exists(PHOTOS_FILE):
         return {"status": "error"}
@@ -362,7 +362,7 @@ def add_photo_to_album(album_id: str, req: AddPhotoRequest):
         return {"status": "success", "photo": new_photo}
     return {"status": "error", "message": "Album not found"}
 
-@app.delete("/api/photos/albums/{album_id}")
+@app.delete("/api/gallery/albums/{album_id}")
 def delete_album(album_id: str):
     if not os.path.exists(PHOTOS_FILE):
         return {"status": "error"}
@@ -382,7 +382,7 @@ def delete_album(album_id: str):
     return {"status": "error", "message": "Album not found"}
 
 
-@app.delete("/api/photos/albums/{album_id}/photos/{photo_id}")
+@app.delete("/api/gallery/albums/{album_id}/photos/{photo_id}")
 def delete_photo_from_album(album_id: str, photo_id: str):
     if not os.path.exists(PHOTOS_FILE):
         return {"status": "error"}

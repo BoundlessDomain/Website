@@ -31,7 +31,7 @@ export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHi
     const handleShuffle = async () => {
         setShuffling(true);
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/highlights/shuffle`, { method: "POST" });
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/highlights/shuffle`, { method: "POST" });
             window.location.reload(); // Simple reload to fetch new data
         } catch (e) {
             console.error(e);

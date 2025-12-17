@@ -17,7 +17,7 @@ export default function GalleryPage() {
     const fetchGallery = useCallback(async () => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-            const res = await fetch(`${apiUrl}/api/photos`);
+            const res = await fetch(`${apiUrl}/api/gallery`);
             if (!res.ok) throw new Error("Network response was not ok");
             const jsonData = await res.json();
             setData(jsonData);
@@ -35,7 +35,7 @@ export default function GalleryPage() {
         } catch (err) {
             console.error("Failed to load gallery", err);
         } finally {
-             setLoading(false);
+            setLoading(false);
         }
     }, [selectedAlbum]);
 

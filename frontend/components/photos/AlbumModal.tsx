@@ -123,7 +123,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
             setCurrentAlbum(prev => prev ? ({ ...prev, title, date: newDate }) : null);
 
             try {
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}`, {
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date: newDate })
@@ -145,7 +145,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
 
             try {
                 const newDate = `${selectedMonth} ${selectedYear}`;
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}`, {
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title, coverUrl: photo.url, date: newDate })
@@ -189,7 +189,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
             }
 
             // 2. Delete from Backend (and Cache)
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}/photos/${photoId}`, {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}/photos/${photoId}`, {
                 method: 'DELETE',
             });
             onAlbumUpdate?.(); // Notify parent to refresh data
@@ -200,7 +200,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
         if (confirmText !== currentAlbum.title) return;
 
         try {
-            await fetch(`http://localhost:8000/api/photos/albums/${currentAlbum.id}`, {
+            await fetch(`http://localhost:8000/api/gallery/albums/${currentAlbum.id}`, {
                 method: 'DELETE',
             });
             onClose();
@@ -296,7 +296,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                     .getPublicUrl(fileName);
 
                 // 3. Save to Backend
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}/photos`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}/photos`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: publicUrl, type: fileType })
@@ -426,7 +426,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                                             // For simplicity, let's just inline the fetch or call a flexible saver.
                                                             // Ideally we updating the 'currentAlbum' instantly for UI snappiness.
                                                             setCurrentAlbum(prev => prev ? ({ ...prev, date: newDate }) : null);
-                                                            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}`, {
+                                                            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}`, {
                                                                 method: 'PUT',
                                                                 headers: { 'Content-Type': 'application/json' },
                                                                 body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date: newDate })
@@ -443,7 +443,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                                             setSelectedYear(newYear);
                                                             const newDate = `${selectedMonth} ${newYear}`;
                                                             setCurrentAlbum(prev => prev ? ({ ...prev, date: newDate }) : null);
-                                                            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}`, {
+                                                            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}`, {
                                                                 method: 'PUT',
                                                                 headers: { 'Content-Type': 'application/json' },
                                                                 body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date: newDate })
