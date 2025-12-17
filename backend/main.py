@@ -135,6 +135,15 @@ class VerifyOwnerRequest(BaseModel):
 @app.post("/api/verify-owner")
 def verify_owner(req: VerifyOwnerRequest):
     try:
+        # 1. Hardcoded Allowlist (Bootstrapping / Super Admin)
+        # This ensures specific emails always have access, useful if DB trigger fails or for initial setup.
+        ADMIN_EMAILS = ["home.bobbyyu@gmail.com"]
+        if req.email and req.email in ADMIN_EMAILS:
+            return {"isOwner": True}
+
+        # 2. Database Role (Future Scalability)
+        # For other users, we check the 'is_admin' flag in the 'profiles' table.
+        # This allows you to manage admins via Supabase dashboard without code changes.
         # Check profiles table in Supabase
         # We use the 'id' (UUID) to query the profile
         res = supabase_client.table("profiles").select("is_admin").eq("id", req.id).execute()
