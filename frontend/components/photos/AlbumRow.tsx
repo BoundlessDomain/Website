@@ -2,6 +2,23 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useUIStore } from "@/store/uiStore";
+import { Plus } from "lucide-react";
+import clsx from "clsx";
+
+interface Photo {
+    id: string;
+    url: string;
+}
+
+interface Album {
+    id: string;
+    title: string;
+    coverUrl: string;
+    date: string;
+    photos: Photo[];
+}
+
 interface AlbumRowProps {
     albums: Album[];
     onSelectAlbum: (album: Album) => void;

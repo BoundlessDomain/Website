@@ -1,10 +1,12 @@
+"use client";
+
 import { AnimatePresence } from "framer-motion";
 import AlbumModal from "@/components/photos/AlbumModal";
 import { useState, useEffect } from "react";
-import { Camera, Loader2 } from "lucide-react"; // Assuming these are also needed based on usage
-import PageTransition from "@/components/PageTransition"; // Assuming this is also needed based on usage
-import HeroHighlights from "@/components/photos/HeroHighlights"; // Assuming this is also needed based on usage
-import AlbumRow from "@/components/photos/AlbumRow"; // Assuming this is also needed based on usage
+import { Camera, Loader2, Image as ImageIcon } from "lucide-react";
+import PageTransition from "@/components/ui/PageTransition";
+import HeroHighlights from "@/components/photos/HeroHighlights";
+import AlbumRow from "@/components/photos/AlbumRow";
 
 export default function GalleryPage() {
     const [data, setData] = useState<{ highlights: any[], albums: any[] } | null>(null);

@@ -37,7 +37,16 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
 
     // Local state for inline editing
     const [title, setTitle] = useState(album?.title || "");
-    const [date, setDate] = useState(album?.date || "");
+    const [selectedMonth, setSelectedMonth] = useState("");
+    const [selectedYear, setSelectedYear] = useState("");
+
+    const MONTHS = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
+    const currentYear = new Date().getFullYear();
+    const YEARS = Array.from({ length: currentYear - 1999 }, (_, i) => (currentYear - i).toString());
 
     // Delete State
     const [isDeleting, setIsDeleting] = useState(false);
@@ -60,7 +69,22 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
             if (!currentAlbum || currentAlbum.id !== album.id) {
                 setCurrentAlbum(album);
                 setTitle(album.title);
-                setDate(album.date);
+
+                // Parse Date
+                const parts = (album.date || "").split(" ");
+                if (parts.length >= 2) {
+                    setSelectedMonth(parts[0]);
+                    setSelectedYear(parts[1]);
+                } else if (parts.length === 1 && parts[0]) {
+                    // Only Month present?
+                    setSelectedMonth(parts[0]);
+                    setSelectedYear(currentYear.toString());
+                } else {
+                    // Fallback to current
+                    const now = new Date();
+                    setSelectedMonth(MONTHS[now.getMonth()]);
+                    setSelectedYear(now.getFullYear().toString());
+                }
 
                 // PRELOAD IMAGES
                 album.photos.forEach(photo => {
@@ -91,15 +115,17 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
     if (!currentAlbum) return null;
 
     const handleUpdate = async () => {
-        if (title !== currentAlbum.title || date !== currentAlbum.date) {
+        const newDate = `${selectedMonth} ${selectedYear}`;
+
+        if (title !== currentAlbum.title || newDate !== currentAlbum.date) {
             // Optimistic Update
-            setCurrentAlbum(prev => prev ? ({ ...prev, title, date }) : null);
+            setCurrentAlbum(prev => prev ? ({ ...prev, title, date: newDate }) : null);
 
             try {
                 await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date })
+                    body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date: newDate })
                 });
                 onAlbumUpdate?.();
             } catch (e) { console.error(e); }
@@ -117,10 +143,11 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
             setIsSelectingCover(false);
 
             try {
+                const newDate = `${selectedMonth} ${selectedYear}`;
                 await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, coverUrl: photo.url, date })
+                    body: JSON.stringify({ title, coverUrl: photo.url, date: newDate })
                 });
                 onAlbumUpdate?.();
             } catch (e) {
@@ -167,6 +194,11 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
             onAlbumUpdate?.(); // Notify parent to refresh data
         } catch (e) { console.error(e); }
     };
+
+    // ... rest of delete and file upload logic ...
+
+    // RENDER: Date Section (Lines ~358)
+
 
     const handleDelete = async () => {
         if (confirmText !== currentAlbum.title) return;
@@ -315,11 +347,11 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none"
         >
             <div
                 className={clsx(
-                    "absolute inset-0 bg-black/80",
+                    "absolute inset-0 bg-black/80 pointer-events-auto",
                     !isLowPowerMode && "backdrop-blur-md"
                 )}
                 onClick={onClose}
@@ -327,7 +359,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
 
             <motion.div
                 layoutId={!isLowPowerMode ? `album-card-${currentAlbum.id}` : undefined}
-                className="bg-black/90 border border-white/10 w-full max-w-[95vw] h-[90vh] rounded-3xl overflow-hidden relative z-[101] flex flex-col shadow-2xl"
+                className="bg-black/90 border border-white/10 w-full max-w-[95vw] h-[90vh] rounded-3xl overflow-hidden relative z-[101] flex flex-col shadow-2xl pointer-events-auto"
             >
                 {/* Header */}
                 <div className={clsx(
@@ -380,18 +412,51 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
 
                                     {/* Date (Inline Edit) */}
                                     <div className="flex items-center gap-4 text-white/50 text-sm">
-                                        <span className="flex items-center gap-1">
+                                        <span className="flex items-center gap-2">
                                             <Calendar size={14} />
                                             {mounted && isOwner ? (
-                                                <input
-                                                    type="text"
-                                                    value={date}
-                                                    onChange={(e) => setDate(e.target.value)}
-                                                    onBlur={handleUpdate}
-                                                    className="bg-transparent border-b border-white/10 focus:border-primary outline-none w-32 text-white"
-                                                />
+                                                <div className="flex items-center gap-1">
+                                                    <select
+                                                        value={selectedMonth}
+                                                        onChange={(e) => {
+                                                            const newMonth = e.target.value;
+                                                            setSelectedMonth(newMonth);
+                                                            // Trigger update with new value immediately
+                                                            const newDate = `${newMonth} ${selectedYear}`;
+                                                            // We replicate handleUpdate logic here or use a helper. 
+                                                            // For simplicity, let's just inline the fetch or call a flexible saver.
+                                                            // Ideally we updating the 'currentAlbum' instantly for UI snappiness.
+                                                            setCurrentAlbum(prev => prev ? ({ ...prev, date: newDate }) : null);
+                                                            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}`, {
+                                                                method: 'PUT',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date: newDate })
+                                                            }).then(() => onAlbumUpdate?.());
+                                                        }}
+                                                        className="bg-transparent border-b border-white/10 focus:border-primary outline-none text-white cursor-pointer hover:text-primary transition-colors appearance-none py-0.5"
+                                                    >
+                                                        {MONTHS.map(m => <option key={m} value={m} className="bg-black text-white">{m}</option>)}
+                                                    </select>
+                                                    <select
+                                                        value={selectedYear}
+                                                        onChange={(e) => {
+                                                            const newYear = e.target.value;
+                                                            setSelectedYear(newYear);
+                                                            const newDate = `${selectedMonth} ${newYear}`;
+                                                            setCurrentAlbum(prev => prev ? ({ ...prev, date: newDate }) : null);
+                                                            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/albums/${currentAlbum.id}`, {
+                                                                method: 'PUT',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date: newDate })
+                                                            }).then(() => onAlbumUpdate?.());
+                                                        }}
+                                                        className="bg-transparent border-b border-white/10 focus:border-primary outline-none text-white cursor-pointer hover:text-primary transition-colors appearance-none py-0.5"
+                                                    >
+                                                        {YEARS.map(y => <option key={y} value={y} className="bg-black text-white">{y}</option>)}
+                                                    </select>
+                                                </div>
                                             ) : (
-                                                date
+                                                `${selectedMonth} ${selectedYear}`
                                             )}
                                         </span>
                                         <span className="flex items-center gap-1"><ImageIcon size={14} /> {currentAlbum.photos.length} Photos</span>

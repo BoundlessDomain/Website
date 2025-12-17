@@ -52,3 +52,6 @@ ENV/
 .idea/
 *.swp
 *.swo
+
+# Cache
+backend/cache/

@@ -164,10 +164,20 @@ def get_photos():
     # --- Dynamic Daily Highlights ---
     # 1. Gather all photos from all albums
     all_photos = []
+    # Process Albums URLs
     albums = data.get("albums", [])
     
-    # Process Albums URLs
+    # Sort albums by date (Newest first)
+    def parse_album_date(d):
+        try:
+            return datetime.strptime(d, "%B %Y")
+        except:
+            return datetime.min
+
+    albums.sort(key=lambda x: parse_album_date(x.get("date", "")), reverse=True)
+
     for album in albums:
+
         album["coverUrl"] = process_url(album.get("coverUrl", ""))
         title = album.get("title", "")
         
@@ -352,6 +362,21 @@ def delete_photo_from_album(album_id: str, photo_id: str):
     for album in data.get("albums", []):
         if album["id"] == album_id:
             found_album = True
+            
+            # Find and Clean Cache first
+            photo_to_delete = next((p for p in album.get("photos", []) if p["id"] == photo_id), None)
+            if photo_to_delete:
+                try:
+                    url = photo_to_delete.get("url", "")
+                    if url:
+                        url_hash = hashlib.md5(url.encode('utf-8')).hexdigest()
+                        ext = os.path.splitext(url.split("?")[0])[1] or ".jpg"
+                        cache_path = os.path.join(CACHE_DIR, f"{url_hash}{ext}")
+                        if os.path.exists(cache_path):
+                            os.remove(cache_path)
+                except Exception as e:
+                    print(f"Cache deletion error: {e}")
+
             initial_count = len(album.get("photos", []))
             # Filter out the photo
             album["photos"] = [p for p in album["photos"] if p["id"] != photo_id]
