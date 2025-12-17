@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useIsPresent } from "framer-motion";
 import { useState, useEffect } from "react";
 import { X, Calendar, Image as ImageIcon, Edit2, Plus, UploadCloud, Trash2 } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
@@ -20,17 +20,15 @@ interface Album {
     date: string;
     photos: Photo[];
 }
-
-interface AlbumModalProps {
-    album: Album | null;
-    onClose: () => void;
-    initialPhotoId?: string;
-    onAlbumUpdate?: () => void;
-}
+// ... interface AlbumModalProps ...
+// Skip to component body
 
 export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpdate }: AlbumModalProps) {
+    const isPresent = useIsPresent();
     const isOwner = useUIStore((state) => state.isOwner);
     const [mounted, setMounted] = useState(false);
+    // ... existing state ...
+
 
     // Local state to manage the album data without reloading
     const [currentAlbum, setCurrentAlbum] = useState<Album | null>(album);
@@ -351,15 +349,19 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
         >
             <div
                 className={clsx(
-                    "absolute inset-0 bg-black/80 pointer-events-auto",
-                    !isLowPowerMode && "backdrop-blur-md"
+                    "absolute inset-0 bg-black/80",
+                    !isLowPowerMode && "backdrop-blur-md",
+                    isPresent ? "pointer-events-auto" : "pointer-events-none"
                 )}
                 onClick={onClose}
             />
 
             <motion.div
                 layoutId={!isLowPowerMode ? `album-card-${currentAlbum.id}` : undefined}
-                className="bg-black/90 border border-white/10 w-full max-w-[95vw] h-[90vh] rounded-3xl overflow-hidden relative z-[101] flex flex-col shadow-2xl pointer-events-auto"
+                className={clsx(
+                    "bg-black/90 border border-white/10 w-full max-w-[95vw] h-[90vh] rounded-3xl overflow-hidden relative z-[101] flex flex-col shadow-2xl",
+                    isPresent ? "pointer-events-auto" : "pointer-events-none"
+                )}
             >
                 {/* Header */}
                 <div className={clsx(
