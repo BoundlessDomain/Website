@@ -40,7 +40,7 @@ export default function TopBar() {
 
             // Verify Owner
             try {
-                const res = await fetch('http://localhost:8000/api/verify-owner', {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/verify-owner`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
