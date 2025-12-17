@@ -121,22 +121,42 @@ class NavigationData(BaseModel):
 def get_navigation():
     supabase_client = get_supabase()
     try:
-        left_res = supabase_client.table("navigation").select("*").eq("side", "left").order("sort_order").execute()
-        right_res = supabase_client.table("navigation").select("*").eq("side", "right").order("sort_order").execute()
+        # Optimization: Fetch all nav items in one query instead of two
+        nav_res = supabase_client.table("navigation").select("*").order("sort_order").execute()
         
+        # Site settings (separate table)
         debug_res = supabase_client.table("site_settings").select("value").eq("key", "isDebugMode").execute()
         is_debug = False
         if debug_res.data:
             is_debug = debug_res.data[0]["value"]
             
+        all_items = nav_res.data if nav_res.data else []
+        
+        # Filter in Python to save a round-trip
+        left_items = [item for item in all_items if item.get("side") == "left"]
+        right_items = [item for item in all_items if item.get("side") == "right"]
+            
         return {
-            "leftNavItems": left_res.data,
-            "rightNavItems": right_res.data,
+            "leftNavItems": left_items,
+            "rightNavItems": right_items,
             "isDebugMode": is_debug
         }
     except Exception as e:
         print(f"Error loading navigation: {e}")
-        return {"leftNavItems": [], "rightNavItems": [], "isDebugMode": False}
+        # FAIL SAFE: Return defaults if DB crashes so the site still works
+        return {
+            "leftNavItems": [
+                {"label": "ARTICLES", "iconName": "FileText", "href": "/articles", "side": "left", "sort_order": 0},
+                {"label": "RECIPES", "iconName": "Utensils", "href": "/recipes", "side": "left", "sort_order": 1},
+                {"label": "GALLERY", "iconName": "Camera", "href": "/gallery", "side": "left", "sort_order": 2}
+            ],
+            "rightNavItems": [
+                {"label": "POEMS", "iconName": "Feather", "href": "/poems", "side": "right", "sort_order": 0},
+                {"label": "STORIES", "iconName": "BookOpen", "href": "/stories", "side": "right", "sort_order": 1},
+                {"label": "ABOUT", "iconName": "User", "href": "/about", "side": "right", "sort_order": 2}
+            ],
+            "isDebugMode": False
+        }
 
 @app.post("/api/navigation")
 def update_navigation(data: NavigationData):

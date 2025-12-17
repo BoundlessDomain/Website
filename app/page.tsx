@@ -6,7 +6,11 @@ import NavigationMenu from "@/components/ui/NavigationMenu";
 // Lazy load the robot scene and DISABLE server-side rendering
 const RobotScene = dynamic(() => import('@/components/canvas/RobotScene'), {
     ssr: false,
-    loading: () => <div className="h-full w-full bg-slate-950" /> // Optional loading placeholder
+    loading: () => (
+        <div className="h-full w-full bg-slate-950 flex items-center justify-center">
+            <span className="text-cyan-500 font-bold tracking-widest animate-pulse">LOADING 3D SCENE...</span>
+        </div>
+    )
 });
 
 export default function Home() {
