@@ -39,7 +39,7 @@ export default function DebugOverlay() {
                 <span>Login Modal:</span> <span>{isLoginOpen ? 'OPEN' : 'CLOSED'}</span>
                 <span>Memory:</span> <span className="text-yellow-400">{memory}</span>
                 <span className="col-span-2 text-[10px] text-gray-400 mt-2 border-t border-white/10 pt-1 break-all pointer-events-auto select-text cursor-text">
-                    {useUIStore((state) => state.authDebugLog}
+                    {useUIStore((state) => state.authDebugLog)}
                 </span>
             </div>
         </div>
