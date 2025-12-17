@@ -1,92 +1,34 @@
-"use client";
+import GalleryClient from "@/components/photos/GalleryClient";
 
-import { AnimatePresence } from "framer-motion";
-import AlbumModal from "@/components/photos/AlbumModal";
-import { useState, useEffect, useCallback } from "react";
-import { Camera, Loader2 } from "lucide-react";
-import PageTransition from "@/components/ui/PageTransition";
-import HeroHighlights from "@/components/photos/HeroHighlights";
-import AlbumRow from "@/components/photos/AlbumRow";
+// Force dynamic rendering so we always get fresh data on the server
+export const dynamic = 'force-dynamic';
 
-export default function GalleryPage() {
-    const [data, setData] = useState<{ highlights: any[], albums: any[] } | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [selectedAlbum, setSelectedAlbum] = useState<any | null>(null);
-    const [initialPhotoId, setInitialPhotoId] = useState<string | undefined>(undefined);
-
-    const fetchGallery = useCallback(async () => {
-        try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-            const res = await fetch(`${apiUrl}/api/photos`);
-            if (!res.ok) throw new Error("Network response was not ok");
-            const jsonData = await res.json();
-            setData(jsonData);
-
-            // If an album is currently selected, update it with fresh data
-            if (selectedAlbum) {
-                const updatedAlbum = jsonData.albums.find((a: any) => a.id === selectedAlbum.id);
-                if (updatedAlbum) {
-                    setSelectedAlbum(updatedAlbum);
-                } else {
-                    // Album was deleted
-                    setSelectedAlbum(null);
-                }
-            }
-        } catch (err) {
-            console.error("Failed to load gallery", err);
-        } finally {
-             setLoading(false);
+async function getGalleryData() {
+    // Use 127.0.0.1 for server-side fetch in this environment
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    try {
+        const res = await fetch(`${apiUrl}/api/photos`, { cache: 'no-store' });
+        if (!res.ok) {
+            console.error("Failed to fetch gallery data:", res.status, res.statusText);
+            return null;
         }
-    }, [selectedAlbum]);
+        return res.json();
+    } catch (e) {
+        console.error("Failed to fetch gallery data:", e);
+        return null;
+    }
+}
 
-    useEffect(() => {
-        fetchGallery();
-    }, []); // Run once on mount
+export default async function GalleryPage() {
+    const data = await getGalleryData();
 
-    const handleSelectAlbum = (album: any) => {
-        setInitialPhotoId(undefined); // Reset specific photo focus
-        setSelectedAlbum(album);
-    };
+    if (!data) {
+        return (
+             <div className="flex items-center justify-center h-screen text-white/50">
+                Failed to load gallery data. Please check the backend connection.
+            </div>
+        );
+    }
 
-    const handleHighlightClick = (albumId: string, photoId: string) => {
-        const album = data?.albums.find(a => a.id === albumId);
-        if (album) {
-            setInitialPhotoId(photoId);
-            setSelectedAlbum(album);
-        }
-    };
-
-    return (
-        <PageTransition icon={Camera} title="GALLERY">
-            {loading ? (
-                <div className="flex items-center justify-center h-64">
-                    <Loader2 className="animate-spin text-primary" size={48} />
-                </div>
-            ) : data ? (
-                <div className="pb-20 w-full max-w-7xl mx-auto px-4 relative">
-                    <HeroHighlights
-                        highlights={data.highlights || []}
-                        onSelectHighlight={handleHighlightClick}
-                    />
-                    <AlbumRow
-                        albums={data.albums || []}
-                        onSelectAlbum={handleSelectAlbum}
-                    />
-
-                    <AnimatePresence>
-                        {selectedAlbum && (
-                            <AlbumModal
-                                album={selectedAlbum}
-                                onClose={() => setSelectedAlbum(null)}
-                                initialPhotoId={initialPhotoId}
-                                onAlbumUpdate={fetchGallery}
-                            />
-                        )}
-                    </AnimatePresence>
-                </div>
-            ) : (
-                <div className="text-white/50 text-center">Failed to load gallery.</div>
-            )}
-        </PageTransition>
-    );
+    return <GalleryClient initialData={data} />;
 }

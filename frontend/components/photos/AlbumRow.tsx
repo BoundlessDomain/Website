@@ -22,9 +22,10 @@ interface Album {
 interface AlbumRowProps {
     albums: Album[];
     onSelectAlbum: (album: Album) => void;
+    onRefresh?: () => void;
 }
 
-export default function AlbumRow({ albums, onSelectAlbum }: AlbumRowProps) {
+export default function AlbumRow({ albums, onSelectAlbum, onRefresh }: AlbumRowProps) {
     const isOwner = useUIStore((state) => state.isOwner);
     const [mounted, setMounted] = useState(false);
 
@@ -42,7 +43,11 @@ export default function AlbumRow({ albums, onSelectAlbum }: AlbumRowProps) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ title, coverUrl: "" })
             });
-            window.location.reload();
+            if (onRefresh) {
+                onRefresh();
+            } else {
+                window.location.reload();
+            }
         } catch (e) {
             console.error(e);
         }

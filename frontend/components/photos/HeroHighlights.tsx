@@ -17,9 +17,10 @@ interface Highlight {
 interface HeroHighlightsProps {
     highlights: Highlight[];
     onSelectHighlight?: (albumId: string, photoId: string) => void;
+    onRefresh?: () => void;
 }
 
-export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHighlightsProps) {
+export default function HeroHighlights({ highlights, onSelectHighlight, onRefresh }: HeroHighlightsProps) {
     const isOwner = useUIStore((state) => state.isOwner);
     const [shuffling, setShuffling] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -32,7 +33,11 @@ export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHi
         setShuffling(true);
         try {
             await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/photos/highlights/shuffle`, { method: "POST" });
-            window.location.reload(); // Simple reload to fetch new data
+            if (onRefresh) {
+                onRefresh();
+            } else {
+                window.location.reload();
+            }
         } catch (e) {
             console.error(e);
         }
