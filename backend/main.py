@@ -135,11 +135,12 @@ class VerifyOwnerRequest(BaseModel):
 @app.post("/api/verify-owner")
 def verify_owner(req: VerifyOwnerRequest):
     try:
-        # 1. Hardcoded Allowlist (Bootstrapping / Super Admin)
-        # This ensures specific emails always have access, useful if DB trigger fails or for initial setup.
-        ADMIN_EMAILS = ["home.bobbyyu@gmail.com"]
-        if req.email and req.email in ADMIN_EMAILS:
-            return {"isOwner": True}
+        if req.email:
+            normalized_email = req.email.lower().strip()
+            # 1. Hardcoded Allowlist (Bootstrapping / Super Admin)
+            ADMIN_EMAILS = ["home.bobbyyu@gmail.com"]
+            if normalized_email in [e.lower() for e in ADMIN_EMAILS]:
+                return {"isOwner": True}
 
         # 2. Database Role (Future Scalability)
         # For other users, we check the 'is_admin' flag in the 'profiles' table.
