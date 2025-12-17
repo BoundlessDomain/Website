@@ -16,7 +16,26 @@ import aiofiles
 import httpx
 from urllib.parse import urlparse
 import ipaddress
-from db import get_supabase
+import ipaddress
+import sys
+import traceback
+
+STARTUP_ERROR = None
+
+try:
+    # Try importing from local directory first
+    try:
+        from db import get_supabase
+    except ImportError:
+        # Fallback for some Vercel environments where .api might be needed
+        from api.db import get_supabase
+except Exception as e:
+    STARTUP_ERROR = f"Import Error: {e}\n{traceback.format_exc()}"
+    print(STARTUP_ERROR)
+    
+    # Mock function so app doesn't crash on definition
+    def get_supabase():
+        return None
 
 
 
@@ -75,6 +94,8 @@ def read_root():
 
 @app.get("/api/health")
 def health_check():
+    if STARTUP_ERROR:
+        return {"status": "error", "message": STARTUP_ERROR, "timestamp": str(datetime.now())}
     return {"status": "ok", "service": "backend", "timestamp": str(datetime.now())}
 
 # --- Navigation ---
