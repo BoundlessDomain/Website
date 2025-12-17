@@ -43,31 +43,44 @@ export default function TopBar() {
 
 
             // Verify Owner
-            // Verify Owner
             const setAuthDebugLog = useUIStore.getState().setAuthDebugLog;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s Timeout
+
             try {
-                setAuthDebugLog(`Fetching /api/verify-owner for ${email}...`);
+                setAuthDebugLog(`[1/3] Fetching /api/verify-owner...`);
+
                 const res = await fetch(`${getApiUrl()}/api/verify-owner`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, email })
+                    body: JSON.stringify({ id, email }),
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
+                setAuthDebugLog(`[2/3] Response: ${res.status} ${res.statusText}`);
 
                 if (res.ok) {
                     const data = await res.json();
-                    console.log("[Auth] Owner verified:", data.isOwner);
                     setOwner(data.isOwner);
-                    setAuthDebugLog(`Success: isOwner=${data.isOwner}`);
+                    setAuthDebugLog(`[3/3] Success: Owner=${data.isOwner}`);
+                    console.log("[Auth] Owner verified:", data.isOwner);
                 } else {
                     setOwner(false);
                     const text = await res.text();
-                    setAuthDebugLog(`Error ${res.status}: ${text.substring(0, 50)}`);
-                    console.error("[Auth] Verify failed status:", res.status, text);
+                    setAuthDebugLog(`[3/3] Error ${res.status}: ${text.slice(0, 100)}`);
+                    console.error("[Auth] Verify failed:", text);
                 }
-            } catch (err) {
-                console.error("[Auth] Verification failed", err);
+            } catch (err: any) {
                 setOwner(false);
-                setAuthDebugLog(`Exception: ${String(err)}`);
+                if (err.name === 'AbortError') {
+                    setAuthDebugLog(`[Fail] Timeout: Server took >15s`);
+                } else {
+                    setAuthDebugLog(`[Fail] Network Error: ${err.message}`);
+                }
+                console.error("[Auth] Verification Exception", err);
+            } finally {
+                clearTimeout(timeoutId);
             }
         };
 
