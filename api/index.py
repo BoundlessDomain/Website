@@ -68,8 +68,10 @@ app.add_middleware(
 )
 
 # --- Helper ---
+# --- Helper ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CACHE_DIR = os.path.join(BASE_DIR, "cache")
+# Vercel filesystem is read-only except for /tmp
+CACHE_DIR = "/tmp/cache"
 if not os.path.exists(CACHE_DIR):
     os.makedirs(CACHE_DIR)
 
@@ -94,8 +96,14 @@ def read_root():
 
 @app.get("/api/health")
 def health_check():
+    # If there was an error during startup/imports, return it here so we can see it in production
     if STARTUP_ERROR:
-        return {"status": "error", "message": STARTUP_ERROR, "timestamp": str(datetime.now())}
+        return {
+            "status": "error", 
+            "message": "Startup failed", 
+            "detail": STARTUP_ERROR,
+            "timestamp": str(datetime.now())
+        }
     return {"status": "ok", "service": "backend", "timestamp": str(datetime.now())}
 
 # --- Navigation ---
