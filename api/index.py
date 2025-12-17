@@ -132,7 +132,7 @@ def get_navigation():
             
         all_items = nav_res.data if nav_res.data else []
         
-        # Filter in Python to save a round-trip
+        # Filter in Python
         left_items = [item for item in all_items if item.get("side") == "left"]
         right_items = [item for item in all_items if item.get("side") == "right"]
             
@@ -143,20 +143,54 @@ def get_navigation():
         }
     except Exception as e:
         print(f"Error loading navigation: {e}")
-        # FAIL SAFE: Return defaults if DB crashes so the site still works
-        return {
-            "leftNavItems": [
-                {"label": "ARTICLES", "iconName": "FileText", "href": "/articles", "side": "left", "sort_order": 0},
-                {"label": "RECIPES", "iconName": "Utensils", "href": "/recipes", "side": "left", "sort_order": 1},
-                {"label": "GALLERY", "iconName": "Camera", "href": "/gallery", "side": "left", "sort_order": 2}
-            ],
-            "rightNavItems": [
-                {"label": "POEMS", "iconName": "Feather", "href": "/poems", "side": "right", "sort_order": 0},
-                {"label": "STORIES", "iconName": "BookOpen", "href": "/stories", "side": "right", "sort_order": 1},
-                {"label": "ABOUT", "iconName": "User", "href": "/about", "side": "right", "sort_order": 2}
-            ],
-            "isDebugMode": False
-        }
+        return {"leftNavItems": [], "rightNavItems": [], "isDebugMode": False}
+
+
+@app.api_route("/api/seed-defaults", methods=["GET", "POST"])
+def seed_defaults():
+    """
+    One-time helper to populate the DB if it's empty.
+    Callable via GET (browser) or POST.
+    """
+    supabase_client = get_supabase()
+    try:
+        # Check if empty
+        existing = supabase_client.table("navigation").select("*").execute()
+        if existing.data and len(existing.data) > 0:
+            return {"status": "skipped", "message": "Database already has navigation items."}
+
+        # Defaults
+        defaults = [
+            {"label": "ARTICLES", "iconName": "FileText", "href": "/articles", "side": "left", "sort_order": 0},
+            {"label": "RECIPES", "iconName": "Utensils", "href": "/recipes", "side": "left", "sort_order": 1},
+            {"label": "GALLERY", "iconName": "Camera", "href": "/gallery", "side": "left", "sort_order": 2},
+            {"label": "POEMS", "iconName": "Feather", "href": "/poems", "side": "right", "sort_order": 0},
+            {"label": "STORIES", "iconName": "BookOpen", "href": "/stories", "side": "right", "sort_order": 1},
+            {"label": "ABOUT", "iconName": "User", "href": "/about", "side": "right", "sort_order": 2},
+            {"label": "CONTACTS", "iconName": "Users", "href": "/contacts", "side": "right", "sort_order": 3}
+        ]
+
+        # Insert
+        # Note: mapping keys to match DB expectation is handled by Supabase client usually if keys match columns
+        # We need to map camelCase (if any) to snake_case if your DB uses snake_case. 
+        # Looking at previous code, 'icon_name' seemed to be the column name in update_navigation?
+        # Let's check update_navigation usage: "icon_name": item.iconName
+        
+        db_rows = []
+        for d in defaults:
+            db_rows.append({
+                "label": d["label"],
+                "icon_name": d["iconName"], # Mapped to snake_case column
+                "href": d["href"],
+                "side": d["side"],
+                "sort_order": d["sort_order"]
+            })
+
+        supabase_client.table("navigation").insert(db_rows).execute()
+        return {"status": "success", "message": "Database populated with defaults."}
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.post("/api/navigation")
 def update_navigation(data: NavigationData):

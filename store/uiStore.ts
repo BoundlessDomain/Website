@@ -105,7 +105,7 @@ export const useUIStore = create<UIState>()(
                         set({
                             leftNavItems: data.leftNavItems,
                             rightNavItems: data.rightNavItems,
-                            isDebugMode: data.isDebugMode
+                            // isDebugMode: data.isDebugMode // REMOVED: Keep local only
                         });
                     }
                 } catch (error) {
@@ -132,7 +132,7 @@ export const useUIStore = create<UIState>()(
                         body: JSON.stringify({
                             leftNavItems: newLeft,
                             rightNavItems: newRight,
-                            isDebugMode: state.isDebugMode
+                            // isDebugMode: state.isDebugMode // REMOVED
                         })
                     });
                 } catch (error) {
@@ -142,20 +142,7 @@ export const useUIStore = create<UIState>()(
 
             setDebugMode: async (debug) => {
                 set({ isDebugMode: debug });
-                const state = get();
-                try {
-                    await fetch(`${getApiUrl()}/api/navigation`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            leftNavItems: state.leftNavItems,
-                            rightNavItems: state.rightNavItems,
-                            isDebugMode: debug
-                        })
-                    });
-                } catch (error) {
-                    console.error("Failed to save global debug mode", error);
-                }
+                // REMOVED: No longer syncing global debug mode to server
             }
         }),
         {
