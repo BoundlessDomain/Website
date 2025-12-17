@@ -9,6 +9,8 @@ export const getApiUrl = () => {
     return "";
 
     // 3. Production (Same Domain / Vercel Rewrites)
-    // If running on Vercel without env var, valid requests are relative: /api/...
+    if (typeof window !== 'undefined') {
+        return window.location.origin;
+    }
     return "";
 };
