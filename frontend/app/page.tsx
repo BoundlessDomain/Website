@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import NavigationMenu from "@/components/ui/NavigationMenu";
 
 // Lazy load the robot scene and DISABLE server-side rendering
 const RobotScene = dynamic(() => import('@/components/canvas/RobotScene'), {
@@ -14,7 +15,7 @@ export default function Home() {
             <div className="absolute top-0 left-0 w-full h-full z-0">
                 <RobotScene />
             </div>
-            {/* Your other components */}
+            <NavigationMenu />
         </main>
     );
 }
