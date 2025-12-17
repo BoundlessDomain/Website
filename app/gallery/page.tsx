@@ -35,7 +35,23 @@ export default function GalleryPage() {
         } catch (err) {
             console.error("Failed to load gallery", err);
             // Fallback to empty data so the UI still renders (and allows Owner to add albums)
-            setData({ highlights: [], albums: [] });
+            const placeholder = "/images/placeholder.jpg";
+            setData({
+                highlights: [
+                    { id: "h1", url: placeholder, caption: "Highlight 1", type: "image" },
+                    { id: "h2", url: placeholder, caption: "Highlight 2", type: "image" },
+                    { id: "h3", url: placeholder, caption: "Highlight 3", type: "image" }
+                ],
+                albums: [
+                    {
+                        id: "default",
+                        title: "My Photos",
+                        date: "2024",
+                        coverUrl: placeholder,
+                        photos: [{ id: "p1", url: placeholder, type: "image" }]
+                    }
+                ]
+            });
         } finally {
             setLoading(false);
         }
