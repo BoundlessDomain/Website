@@ -2,8 +2,8 @@
 
 import { AnimatePresence } from "framer-motion";
 import AlbumModal from "@/components/photos/AlbumModal";
-import { useState, useEffect } from "react";
-import { Camera, Loader2, Image as ImageIcon } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Camera, Loader2 } from "lucide-react";
 import PageTransition from "@/components/ui/PageTransition";
 import HeroHighlights from "@/components/photos/HeroHighlights";
 import AlbumRow from "@/components/photos/AlbumRow";
@@ -14,12 +14,13 @@ export default function GalleryPage() {
     const [selectedAlbum, setSelectedAlbum] = useState<any | null>(null);
     const [initialPhotoId, setInitialPhotoId] = useState<string | undefined>(undefined);
 
-    const fetchGallery = async () => {
+    const fetchGallery = useCallback(async () => {
         try {
-            const res = await fetch('http://localhost:8000/api/photos');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const res = await fetch(`${apiUrl}/api/photos`);
+            if (!res.ok) throw new Error("Network response was not ok");
             const jsonData = await res.json();
             setData(jsonData);
-            setLoading(false);
 
             // If an album is currently selected, update it with fresh data
             if (selectedAlbum) {
@@ -27,19 +28,20 @@ export default function GalleryPage() {
                 if (updatedAlbum) {
                     setSelectedAlbum(updatedAlbum);
                 } else {
-                    // Album was deleted?
+                    // Album was deleted
                     setSelectedAlbum(null);
                 }
             }
         } catch (err) {
             console.error("Failed to load gallery", err);
-            setLoading(false);
+        } finally {
+             setLoading(false);
         }
-    };
+    }, [selectedAlbum]);
 
     useEffect(() => {
         fetchGallery();
-    }, []);
+    }, []); // Run once on mount
 
     const handleSelectAlbum = (album: any) => {
         setInitialPhotoId(undefined); // Reset specific photo focus
@@ -62,14 +64,6 @@ export default function GalleryPage() {
                 </div>
             ) : data ? (
                 <div className="pb-20 w-full max-w-7xl mx-auto px-4 relative">
-                    {/* Instant Refresh Button (Hidden/Optional or integrated? User asked for "refresh button for the gallery page". 
-                        If they meant the browser button, we can't fix that. 
-                        If they check the existing refresh logic in HeroHighlights or Navbar, that's different.
-                        I'll assume they might want a manual refresh if things get stale, but auto-updates should handle it.
-                        For now, the 'refresh' user asked about -> "when i click the refresh button for the gallery page" likely implies the browser one OR a custom one.
-                        I'll stick to auto-updates.
-                     */}
-
                     <HeroHighlights
                         highlights={data.highlights || []}
                         onSelectHighlight={handleHighlightClick}

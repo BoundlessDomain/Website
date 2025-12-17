@@ -20,15 +20,18 @@ interface Album {
     date: string;
     photos: Photo[];
 }
-// ... interface AlbumModalProps ...
-// Skip to component body
+
+interface AlbumModalProps {
+    album: Album;
+    onClose: () => void;
+    initialPhotoId?: string;
+    onAlbumUpdate?: () => void;
+}
 
 export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpdate }: AlbumModalProps) {
     const isPresent = useIsPresent();
     const isOwner = useUIStore((state) => state.isOwner);
     const [mounted, setMounted] = useState(false);
-    // ... existing state ...
-
 
     // Local state to manage the album data without reloading
     const [currentAlbum, setCurrentAlbum] = useState<Album | null>(album);
@@ -193,11 +196,6 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
         } catch (e) { console.error(e); }
     };
 
-    // ... rest of delete and file upload logic ...
-
-    // RENDER: Date Section (Lines ~358)
-
-
     const handleDelete = async () => {
         if (confirmText !== currentAlbum.title) return;
 
@@ -211,7 +209,6 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
     };
 
     // File Upload Logic
-    // ... compressImage ...
     const compressImage = (file: File): Promise<File> => {
         return new Promise((resolve, reject) => {
             const img = new Image();
