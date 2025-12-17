@@ -62,11 +62,22 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 });
                 if (error) throw error;
 
-                // --- OWNER CHECK (MOCK) ---
-                // In production this would check a 'roles' table or metadata
-                if (email.toLowerCase().includes('admin')) {
-                    useUIStore.getState().setOwner(true);
-                } else {
+                // --- OWNER CHECK ---
+                try {
+                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/verify-owner`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+                    if (res.ok) {
+                        const verifyData = await res.json();
+                        useUIStore.getState().setOwner(verifyData.isOwner);
+                    } else {
+                        console.error('Failed to verify owner status');
+                        useUIStore.getState().setOwner(false);
+                    }
+                } catch (err) {
+                    console.error('Owner verification error:', err);
                     useUIStore.getState().setOwner(false);
                 }
 
