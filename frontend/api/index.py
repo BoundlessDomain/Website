@@ -18,11 +18,7 @@ from urllib.parse import urlparse
 import ipaddress
 from db import get_supabase
 
-try:
-    supabase_client = get_supabase()
-except Exception as e:
-    print(f"Supabase Init Error: {e}")
-    supabase_client = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -94,6 +90,7 @@ class NavigationData(BaseModel):
 
 @app.get("/api/navigation")
 def get_navigation():
+    supabase_client = get_supabase()
     try:
         left_res = supabase_client.table("navigation").select("*").eq("side", "left").order("sort_order").execute()
         right_res = supabase_client.table("navigation").select("*").eq("side", "right").order("sort_order").execute()
@@ -114,6 +111,7 @@ def get_navigation():
 
 @app.post("/api/navigation")
 def update_navigation(data: NavigationData):
+    supabase_client = get_supabase()
     try:
         supabase_client.table("site_settings").upsert({"key": "isDebugMode", "value": data.isDebugMode}).execute()
         
@@ -141,6 +139,7 @@ class VerifyOwnerRequest(BaseModel):
 
 @app.post("/api/verify-owner")
 def verify_owner(req: VerifyOwnerRequest):
+    supabase_client = get_supabase()
     try:
         if req.email:
             normalized_email = req.email.lower().strip()
@@ -171,6 +170,7 @@ def verify_owner(req: VerifyOwnerRequest):
 # --- Gallery ---
 @app.get("/api/gallery")
 def get_photos():
+    supabase_client = get_supabase()
     try:
         res = supabase_client.table("albums").select("*, photos(*)").execute()
         albums = res.data if res.data else []
@@ -224,6 +224,7 @@ def get_photos():
 
 @app.post("/api/gallery/highlights/shuffle")
 def shuffle_highlights():
+    supabase_client = get_supabase()
     try:
         new_seed = random.randint(1, 1000000)
         supabase_client.table("site_settings").upsert({"key": "shuffleSeed", "value": new_seed}).execute()
