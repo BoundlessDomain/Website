@@ -16,6 +16,9 @@ import aiofiles
 import httpx
 from urllib.parse import urlparse
 import ipaddress
+from db import get_supabase
+
+supabase_client = get_supabase()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -63,23 +66,30 @@ class NavigationData(BaseModel):
 DATA_FILE = get_path("navigation_data.json")
 
 def load_data():
-    if not os.path.exists(DATA_FILE):
-        # Default Data
+    try:
+        # Fetch Navigation
+        # We need to sort by 'sort_order' potentially, but standard fetch is okay
+        left_res = supabase_client.table("navigation").select("*").eq("side", "left").order("sort_order").execute()
+        right_res = supabase_client.table("navigation").select("*").eq("side", "right").order("sort_order").execute()
+        
+        # Fetch Settings
+        debug_res = supabase_client.table("site_settings").select("value").eq("key", "isDebugMode").execute()
+        is_debug = False
+        if debug_res.data:
+            is_debug = debug_res.data[0]["value"]
+            
         return {
-            "leftNavItems": [
-                {"label": "ARTICLES", "iconName": "FileText", "href": "/articles"},
-                {"label": "RECIPES", "iconName": "Utensils", "href": "/recipes"},
-                {"label": "GALLERY", "iconName": "Camera", "href": "/gallery"},
-            ],
-            "rightNavItems": [
-                {"label": "POEMS", "iconName": "Feather", "href": "/poems"},
-                {"label": "STORIES", "iconName": "BookOpen", "href": "/stories"},
-                {"label": "ABOUT", "iconName": "User", "href": "/about"},
-            ],
+            "leftNavItems": left_res.data,
+            "rightNavItems": right_res.data,
+            "isDebugMode": is_debug
+        }
+    except Exception as e:
+        print(f"Error loading navigation: {e}")
+        return {
+            "leftNavItems": [],
+            "rightNavItems": [],
             "isDebugMode": False
         }
-    with open(DATA_FILE, "r") as f:
-        return json.load(f)
 
 def save_data(data):
     # Atomic write
@@ -98,10 +108,46 @@ def get_navigation():
 
 @app.post("/api/navigation")
 def update_navigation(data: NavigationData):
-    # Convert Pydantic model to dict
-    data_dict = data.dict()
-    save_data(data_dict)
-    return {"status": "success", "data": data_dict}
+    try:
+        # 1. Update Debug Mode
+        supabase_client.table("site_settings").upsert({"key": "isDebugMode", "value": data.isDebugMode}).execute()
+        
+        # 2. Update Navigation Items
+        # Strategy: Clear existing side and re-insert (simplest for sorting updates)
+        # In a real heavy app, we'd issue updates by ID, but full wipe/replace per side is safer for order consistency here.
+        
+        # Left
+        supabase_client.table("navigation").delete().eq("side", "left").execute()
+        if data.leftNavItems:
+            left_inserts = []
+            for i, item in enumerate(data.leftNavItems):
+                left_inserts.append({
+                    "side": "left",
+                    "sort_order": i,
+                    "label": item.label,
+                    "icon_name": item.iconName,
+                    "href": item.href
+                })
+            supabase_client.table("navigation").insert(left_inserts).execute()
+            
+        # Right
+        supabase_client.table("navigation").delete().eq("side", "right").execute()
+        if data.rightNavItems:
+            right_inserts = []
+            for i, item in enumerate(data.rightNavItems):
+                right_inserts.append({
+                    "side": "right",
+                    "sort_order": i,
+                    "label": item.label,
+                    "icon_name": item.iconName,
+                    "href": item.href
+                })
+            supabase_client.table("navigation").insert(right_inserts).execute()
+
+        return {"status": "success"}
+    except Exception as e:
+        print(f"Error saving navigation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- Owner Verification ---
 OWNERS_FILE = get_path("owners.json")
@@ -192,86 +238,89 @@ def save_photos_data(data):
 
 @app.get("/api/gallery")
 def get_photos():
-    if not os.path.exists(PHOTOS_FILE):
-        return {"highlights": [], "albums": []}
-    
-    with open(PHOTOS_FILE, "r") as f:
-        data = json.load(f)
+    try:
+        # Fetch Albums with Photos (Relational Query)
+        res = supabase_client.table("albums").select("*, photos(*)").execute()
+        albums = res.data if res.data else []
         
-    # --- Dynamic Daily Highlights ---
-    # 1. Gather all photos from all albums
-    all_photos = []
-    # Process Albums URLs
-    albums = data.get("albums", [])
-    
-    # Sort albums by date (Newest first)
-    def parse_album_date(d):
-        try:
-            return datetime.strptime(d, "%B %Y")
-        except:
-            return datetime.min
-
-    albums.sort(key=lambda x: parse_album_date(x.get("date", "")), reverse=True)
-
-    for album in albums:
-
-        album["coverUrl"] = process_url(album.get("coverUrl", ""))
-        title = album.get("title", "")
+        all_photos = []
         
-        for photo in album.get("photos", []):
-            # Process Photo URL
-            original_url = photo.get("url", "")
-            final_url = process_url(original_url)
-            photo["url"] = final_url
-            media_type = photo.get("type", "image")
+        # Sort albums python-side or DB-side. DB-side needs custom sort on text date which is hard.
+        # Let's keep Python sorting for compatibility with 'Month Year' string format.
+        def parse_album_date(d):
+            try:
+                return datetime.strptime(d, "%B %Y")
+            except:
+                return datetime.min
+
+        albums.sort(key=lambda x: parse_album_date(x.get("date_label", "")), reverse=True)
+        
+        # Normalize structure for Frontend
+        # Frontend expects: id, title, coverUrl, date, photos: [{id, url, type}]
+        # Supabase returns: id, title, cover_url, date_label, photos: [...]
+        # We need to map camelCase.
+        
+        final_albums = []
+        for a in albums:
+            mapped_album = {
+                "id": a["id"],
+                "title": a["title"],
+                "coverUrl": process_url(a.get("cover_url") or ""),
+                "date": a.get("date_label"),
+                "photos": []
+            }
             
-            all_photos.append({
-                "id": photo["id"],
-                "type": media_type,
-                "url": final_url,
-                "caption": title,
-                "albumId": album["id"]
-            })
-    
-    # 2. Select 3 random photos, seeded by today's date
-    if all_photos:
-        # Check if we have a forced shuffle seed saved
-        shuffle_seed = data.get("shuffleSeed")
+            for p in a.get("photos", []):
+                p_url = process_url(p["url"])
+                mapped_album["photos"].append({
+                    "id": p["id"],
+                    "url": p_url,
+                    "type": p.get("type", "image")
+                })
+                
+                # Collect for highlights
+                all_photos.append({
+                    "id": p["id"],
+                    "type": p.get("type", "image"),
+                    "url": p_url,
+                    "caption": a["title"],
+                    "albumId": a["id"]
+                })
+                
+            final_albums.append(mapped_album)
+
+        # Highlights Logic
+        highlights = []
+        if all_photos:
+            # Fetch Seed
+            seed_res = supabase_client.table("site_settings").select("value").eq("key", "shuffleSeed").execute()
+            if seed_res.data:
+                random.seed(seed_res.data[0]["value"])
+            else:
+                today_seed = int(datetime.now().strftime("%Y%m%d"))
+                random.seed(today_seed)
+                
+            count = min(len(all_photos), 3)
+            highlights = random.sample(all_photos, count)
+            random.seed() # Reset
+
+        return {
+            "highlights": highlights,
+            "albums": final_albums
+        }
         
-        if shuffle_seed:
-            random.seed(shuffle_seed)
-        else:
-            # Default to daily seed
-            today_seed = int(datetime.now().strftime("%Y%m%d"))
-            random.seed(today_seed)
-        
-        # Ensure we don't try to sample more than we have
-        count = min(len(all_photos), 3)
-        daily_highlights = random.sample(all_photos, count)
-        
-        # Important: Reset seed
-        random.seed()
-        
-        # Override highlights
-        data["highlights"] = daily_highlights
-        
-    return data
+    except Exception as e:
+        print(f"Error fetching gallery: {e}")
+        return {"highlights": [], "albums": []}
 
 @app.post("/api/gallery/highlights/shuffle")
 def shuffle_highlights():
-    if not os.path.exists(PHOTOS_FILE):
-        return {"status": "error"}
-    
-    with open(PHOTOS_FILE, "r") as f:
-        data = json.load(f)
-    
-    # Generate a new random seed and save it
-    new_seed = random.randint(1, 1000000)
-    data["shuffleSeed"] = new_seed
-    
-    save_photos_data(data)
-        
-    return {"status": "success", "seed": new_seed}
+    try:
+        new_seed = random.randint(1, 1000000)
+        supabase_client.table("site_settings").upsert({"key": "shuffleSeed", "value": new_seed}).execute()
+        return {"status": "success", "seed": new_seed}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 class CreateAlbumRequest(BaseModel):
     title: str
@@ -279,56 +328,45 @@ class CreateAlbumRequest(BaseModel):
 
 @app.post("/api/gallery/albums")
 def create_album(req: CreateAlbumRequest):
-    if not os.path.exists(PHOTOS_FILE):
-        return {"status": "error"}
+    try:
+        new_album = {
+            "title": req.title,
+            "cover_url": req.coverUrl if req.coverUrl else "https://picsum.photos/seed/new/400/400",
+            "date_label": datetime.now().strftime("%B %Y")
+        }
+        res = supabase_client.table("albums").insert(new_album).execute()
+        created = res.data[0]
         
-    with open(PHOTOS_FILE, "r") as f:
-        data = json.load(f)
-        
-    new_album = {
-        "id": str(uuid.uuid4()),
-        "title": req.title,
-        "coverUrl": req.coverUrl if req.coverUrl else "https://picsum.photos/seed/new/400/400",
-        "date": datetime.now().strftime("%B %Y"),
-        "photos": []
-    }
-    
-    if "albums" not in data:
-        data["albums"] = []
-        
-    data["albums"].insert(0, new_album) # Add to top
-    
-    save_photos_data(data)
-        
-    return {"status": "success", "album": new_album}
+        # Format for frontend
+        return {"status": "success", "album": {
+             "id": created["id"],
+             "title": created["title"],
+             "coverUrl": created["cover_url"],
+             "date": created["date_label"],
+             "photos": []
+        }}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 class UpdateAlbumRequest(BaseModel):
     title: str
     coverUrl: str
-    date: str = None # Optional, if not provided, keep existing
+    date: str = None 
 
 @app.put("/api/gallery/albums/{album_id}")
 def update_album(album_id: str, req: UpdateAlbumRequest):
-    if not os.path.exists(PHOTOS_FILE):
-        return {"status": "error"}
-        
-    with open(PHOTOS_FILE, "r") as f:
-        data = json.load(f)
-        
-    found = False
-    for album in data.get("albums", []):
-        if album["id"] == album_id:
-            album["title"] = req.title
-            album["coverUrl"] = req.coverUrl
-            if req.date:
-                album["date"] = req.date
-            found = True
-            break
+    try:
+        update_data = {
+            "title": req.title,
+            "cover_url": req.coverUrl
+        }
+        if req.date:
+            update_data["date_label"] = req.date
             
-    if found:
-        save_photos_data(data)
+        supabase_client.table("albums").update(update_data).eq("id", album_id).execute()
         return {"status": "success"}
-    return {"status": "error", "message": "Album not found"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 class AddPhotoRequest(BaseModel):
     url: str
@@ -336,90 +374,43 @@ class AddPhotoRequest(BaseModel):
 
 @app.post("/api/gallery/albums/{album_id}/photos")
 def add_photo_to_album(album_id: str, req: AddPhotoRequest):
-    if not os.path.exists(PHOTOS_FILE):
-        return {"status": "error"}
+    try:
+        new_photo = {
+            "album_id": album_id,
+            "url": req.url,
+            "type": req.type
+        }
+        res = supabase_client.table("photos").insert(new_photo).execute()
+        created = res.data[0]
         
-    with open(PHOTOS_FILE, "r") as f:
-        data = json.load(f)
-        
-    found = False
-    new_photo = None
-    for album in data.get("albums", []):
-        if album["id"] == album_id:
-            new_photo = {
-                "id": str(uuid.uuid4()),
-                "url": req.url,
-                "type": req.type
-            }
-            if "photos" not in album:
-                album["photos"] = []
-            album["photos"].append(new_photo)
-            found = True
-            break
-            
-    if found:
-        save_photos_data(data)
-        return {"status": "success", "photo": new_photo}
-    return {"status": "error", "message": "Album not found"}
+        return {"status": "success", "photo": {
+            "id": created["id"],
+            "url": created["url"],
+            "type": created["type"]
+        }}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.delete("/api/gallery/albums/{album_id}")
 def delete_album(album_id: str):
-    if not os.path.exists(PHOTOS_FILE):
-        return {"status": "error"}
-        
-    with open(PHOTOS_FILE, "r") as f:
-        data = json.load(f)
-        
-    albums = data.get("albums", [])
-    initial_count = len(albums)
-    # Filter out the album with the matching ID
-    data["albums"] = [a for a in albums if a["id"] != album_id]
-    
-    if len(data["albums"]) < initial_count:
-        save_photos_data(data)
+    try:
+        supabase_client.table("albums").delete().eq("id", album_id).execute()
         return {"status": "success"}
-        
-    return {"status": "error", "message": "Album not found"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @app.delete("/api/gallery/albums/{album_id}/photos/{photo_id}")
 def delete_photo_from_album(album_id: str, photo_id: str):
-    if not os.path.exists(PHOTOS_FILE):
-        return {"status": "error"}
+    try:
+        # Optional: Clean cache logic could be kept here if we fetch the URL first, 
+        # but for Vercel/Supabase migration let's skip local cache cleanup for now 
+        # or implement it if Vercel ephemeral file system matters (it doesn't for cache).
         
-    with open(PHOTOS_FILE, "r") as f:
-        data = json.load(f)
-        
-    found_album = False
-    for album in data.get("albums", []):
-        if album["id"] == album_id:
-            found_album = True
-            
-            # Find and Clean Cache first
-            photo_to_delete = next((p for p in album.get("photos", []) if p["id"] == photo_id), None)
-            if photo_to_delete:
-                try:
-                    url = photo_to_delete.get("url", "")
-                    if url:
-                        url_hash = hashlib.md5(url.encode('utf-8')).hexdigest()
-                        ext = os.path.splitext(url.split("?")[0])[1] or ".jpg"
-                        cache_path = os.path.join(CACHE_DIR, f"{url_hash}{ext}")
-                        if os.path.exists(cache_path):
-                            os.remove(cache_path)
-                except Exception as e:
-                    print(f"Cache deletion error: {e}")
-
-            initial_count = len(album.get("photos", []))
-            # Filter out the photo
-            album["photos"] = [p for p in album["photos"] if p["id"] != photo_id]
-            
-            if len(album["photos"]) < initial_count:
-                save_photos_data(data)
-                return {"status": "success"}
-            return {"status": "error", "message": "Photo not found"}
-            
-    if not found_album:
-        return {"status": "error", "message": "Album not found"}
+        supabase_client.table("photos").delete().eq("id", photo_id).execute()
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 # --- Proxy & Cache System ---
 

@@ -129,3 +129,62 @@ $$ language plpgsql security definer;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- ==========================================
+-- NEW: Navigation & Gallery Tables (Migration)
+-- ==========================================
+
+-- Navigation Items
+create table public.navigation (
+  id uuid default gen_random_uuid() primary key,
+  side text not null check (side in ('left', 'right')),
+  sort_order int not null,
+  label text not null,
+  icon_name text not null,
+  href text not null
+);
+
+-- Global Settings (Debug mode, etc)
+create table public.site_settings (
+  key text primary key,
+  value jsonb not null
+);
+
+-- Albums
+create table public.albums (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  title text not null,
+  cover_url text, -- optimized/highlight url
+  date_label text -- e.g. "December 2023"
+);
+
+-- Photos
+create table public.photos (
+  id uuid default gen_random_uuid() primary key,
+  album_id uuid references public.albums(id) on delete cascade not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  url text not null,
+  type text default 'image',
+  width int,
+  height int
+);
+
+-- RLS for New Tables
+alter table public.navigation enable row level security;
+alter table public.site_settings enable row level security;
+alter table public.albums enable row level security;
+alter table public.photos enable row level security;
+
+-- Policies (Public Read, Admin Write)
+create policy "Public read navigation" on navigation for select using (true);
+create policy "Public read settings" on site_settings for select using (true);
+create policy "Public read albums" on albums for select using (true);
+create policy "Public read photos" on photos for select using (true);
+
+-- Admin Write Policies (using is_admin() function from above)
+create policy "Admins write navigation" on navigation for all using (is_admin());
+create policy "Admins write settings" on site_settings for all using (is_admin());
+create policy "Admins write albums" on albums for all using (is_admin());
+create policy "Admins write photos" on photos for all using (is_admin());
+
