@@ -40,6 +40,10 @@ interface UIState {
     leftNavItems: NavItemState[];
     rightNavItems: NavItemState[];
 
+    // Debugging
+    authDebugLog: string;
+    setAuthDebugLog: (log: string) => void;
+
     // Actions
     fetchNavData: () => Promise<void>;
     updateNavItem: (side: 'left' | 'right', index: number, newItem: NavItemState) => Promise<void>;
@@ -83,7 +87,11 @@ export const useUIStore = create<UIState>()(
             setOwner: (isOwner) => set({ isOwner }),
 
             isLoggedIn: false,
+            isLoggedIn: false,
             setLoggedIn: (isLoggedIn) => set({ isLoggedIn }),
+
+            authDebugLog: "Init...",
+            setAuthDebugLog: (log) => set({ authDebugLog: log }),
 
             leftNavItems: defaultLeftItems,
             rightNavItems: defaultRightItems,

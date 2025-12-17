@@ -43,22 +43,31 @@ export default function TopBar() {
 
 
             // Verify Owner
+            // Verify Owner
+            const setAuthDebugLog = useUIStore.getState().setAuthDebugLog;
             try {
+                setAuthDebugLog(`Fetching /api/verify-owner for ${email}...`);
                 const res = await fetch(`${getApiUrl()}/api/verify-owner`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id, email })
                 });
+
                 if (res.ok) {
                     const data = await res.json();
                     console.log("[Auth] Owner verified:", data.isOwner);
                     setOwner(data.isOwner);
+                    setAuthDebugLog(`Success: isOwner=${data.isOwner}`);
                 } else {
                     setOwner(false);
+                    const text = await res.text();
+                    setAuthDebugLog(`Error ${res.status}: ${text.substring(0, 50)}`);
+                    console.error("[Auth] Verify failed status:", res.status, text);
                 }
             } catch (err) {
                 console.error("[Auth] Verification failed", err);
                 setOwner(false);
+                setAuthDebugLog(`Exception: ${String(err)}`);
             }
         };
 
