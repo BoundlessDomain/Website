@@ -26,7 +26,15 @@ export default function RobotScene() {
                 <ambientLight intensity={0.2} />
                 <pointLight position={[5, 5, 5]} intensity={1.5} color="#06b6d4" />
                 <pointLight position={[-5, 5, -5]} intensity={1.5} color="#a855f7" />
-                <spotLight position={[0, 5, 2]} angle={0.5} penumbra={1} intensity={2} castShadow />
+                <spotLight
+                    position={[0, 5, 2]}
+                    angle={0.5}
+                    penumbra={1}
+                    intensity={2}
+                    castShadow
+                    shadow-mapSize={[512, 512]}
+                    shadow-bias={-0.0001}
+                />
 
                 <Robot />
 

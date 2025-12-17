@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import React, { useRef, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Mesh, Group, Vector3, Raycaster, Plane } from "three";
 import { Text } from "@react-three/drei";
@@ -15,7 +15,7 @@ const lerpAngle = (start: number, end: number, t: number) => {
 };
 
 // --- Zzz PARTICLE SYSTEM ---
-function ZzzParticles() {
+const ZzzParticles = React.memo(function ZzzParticles() {
     // Static Zs for Low Power Mode (No Animation)
     return (
         <group>
@@ -54,7 +54,7 @@ function ZzzParticles() {
             </Text>
         </group>
     );
-}
+});
 
 export default function Robot() {
     const headRef = useRef<Group>(null);
@@ -225,7 +225,8 @@ export default function Robot() {
 
         // --- LEFT ARM IK ---
         if (leftShoulderRef.current && leftElbowRef.current) {
-            // Activate if mouse is on left OR if animating
+            // OPTIMIZATION: If navState is idle and mouse is far, skip complex IK or just lerp to rest
+            // We still run lerp to rest, but we skip the solveIK math if we know we are returning to 0
             if (mouse.x < -0.1 || navState !== 'idle') {
                 let ikTargetX = worldX;
                 let ikTargetY = worldY;
@@ -240,7 +241,7 @@ export default function Robot() {
 
                 const { shoulderAngle, elbowAngle } = solveIK(ikTargetX, ikTargetY, LEFT_SHOULDER_POS, true);
 
-                // Apply interpolations (Add PI/2 to align Y-up cylinder with X-axis angle)
+                // Apply interpolations
                 const targetShoulderRot = shoulderAngle + Math.PI / 2;
                 const targetElbowRot = elbowAngle;
 
@@ -248,8 +249,13 @@ export default function Robot() {
                 leftElbowRef.current.rotation.z = lerpAngle(leftElbowRef.current.rotation.z, targetElbowRot, 0.1);
             } else {
                 // Reset to rest position
-                leftShoulderRef.current.rotation.z = lerpAngle(leftShoulderRef.current.rotation.z, 0, 0.1);
-                leftElbowRef.current.rotation.z = lerpAngle(leftElbowRef.current.rotation.z, 0, 0.1);
+                // Optimization: If already close to 0, stop lerping to save CPU
+                if (Math.abs(leftShoulderRef.current.rotation.z) > 0.001) {
+                    leftShoulderRef.current.rotation.z = lerpAngle(leftShoulderRef.current.rotation.z, 0, 0.1);
+                }
+                if (Math.abs(leftElbowRef.current.rotation.z) > 0.001) {
+                    leftElbowRef.current.rotation.z = lerpAngle(leftElbowRef.current.rotation.z, 0, 0.1);
+                }
             }
         }
 
@@ -277,8 +283,12 @@ export default function Robot() {
                 rightElbowRef.current.rotation.z = lerpAngle(rightElbowRef.current.rotation.z, targetElbowRot, 0.1);
             } else {
                 // Reset to rest position
-                rightShoulderRef.current.rotation.z = lerpAngle(rightShoulderRef.current.rotation.z, 0, 0.1);
-                rightElbowRef.current.rotation.z = lerpAngle(rightElbowRef.current.rotation.z, 0, 0.1);
+                if (Math.abs(rightShoulderRef.current.rotation.z) > 0.001) {
+                    rightShoulderRef.current.rotation.z = lerpAngle(rightShoulderRef.current.rotation.z, 0, 0.1);
+                }
+                if (Math.abs(rightElbowRef.current.rotation.z) > 0.001) {
+                    rightElbowRef.current.rotation.z = lerpAngle(rightElbowRef.current.rotation.z, 0, 0.1);
+                }
             }
         }
 
