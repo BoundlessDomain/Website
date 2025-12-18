@@ -67,7 +67,6 @@ app.add_middleware(
 )
 
 # --- Helper ---
-# --- Helper ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Vercel filesystem is read-only except for /tmp
 CACHE_DIR = "/tmp/cache"
@@ -362,12 +361,21 @@ def get_photos():
 
         highlights = []
         if all_photos:
-            # Use daily seed for consistent shuffle
-            random.seed(int(datetime.now().strftime("%Y%m%d")))
-            
+            # HYBRID SHUFFLE: Try to load seed from DB, fallback to Daily Date
+            try:
+                seed_res = supabase_client.table("site_settings").select("value").eq("key", "shuffleSeed").execute()
+                if seed_res.data and len(seed_res.data) > 0:
+                     random.seed(int(seed_res.data[0]["value"]))
+                else:
+                     # No seed in DB, use Daily Date
+                     random.seed(int(datetime.now().strftime("%Y%m%d")))
+            except Exception:
+                # Table missing or error? Default to Daily Date
+                random.seed(int(datetime.now().strftime("%Y%m%d")))
+
             count = min(len(all_photos), 3)
             highlights = random.sample(all_photos, count)
-            random.seed()
+            random.seed() # Reset global rng
 
         return {"highlights": highlights, "albums": final_albums}
     except Exception as e:
@@ -461,6 +469,18 @@ def delete_photo(album_id: str, photo_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+@app.post("/api/gallery/highlights/shuffle")
+def shuffle_highlights():
+    supabase_client = get_supabase()
+    try:
+        new_seed = random.randint(1, 1000000)
+        # Try to upsert. If table is missing, this will fail.
+        supabase_client.table("site_settings").upsert({"key": "shuffleSeed", "value": new_seed}).execute()
+        return {"status": "success", "seed": new_seed}
+    except Exception as e:
+        print(f"Shuffle Error: {e}")
+        return {"status": "error", "message": str(e)}
 
 # --- Proxy ---
 @app.get("/api/proxy")

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Send, X, HelpCircle } from "lucide-react";
 import clsx from "clsx";
+import { getApiUrl } from "@/utils/api";
 
 export default function FeedbackButton() {
     const [isOpen, setIsOpen] = useState(false);
@@ -18,7 +19,7 @@ export default function FeedbackButton() {
 
         setIsSending(true);
         try {
-            const res = await fetch('http://localhost:8000/api/feedback', {
+            const res = await fetch(`${getApiUrl()}/api/feedback`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message, contact })

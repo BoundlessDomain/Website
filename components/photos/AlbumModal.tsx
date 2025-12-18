@@ -53,8 +53,6 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
     const [selectedYear, setSelectedYear] = useState("");
 
     // Delete State
-
-    // Delete State
     const [isDeleting, setIsDeleting] = useState(false);
     const [confirmText, setConfirmText] = useState("");
 
@@ -83,20 +81,32 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                 setTitle(album.title);
 
                 // Parse Date
-                const parts = (album.date || "").split(" ");
-                if (parts.length >= 2) {
-                    setSelectedMonth(parts[0]);
-                    setSelectedYear(parts[1]);
-                } else if (parts.length === 1 && parts[0]) {
-                    // Only Month present?
-                    setSelectedMonth(parts[0]);
-                    setSelectedYear(currentYear.toString());
+                // Robust parsing for various formats (e.g. "January 2024", "Jan 2024", "2024-01")
+                const dateStr = album.date || "";
+                let foundMonth = "";
+                let foundYear = "";
+
+                // Check for Year (4 digits)
+                const yearMatch = dateStr.match(/\b(19|20)\d{2}\b/);
+                if (yearMatch) {
+                    foundYear = yearMatch[0];
                 } else {
-                    // Fallback to current
-                    const now = new Date();
-                    setSelectedMonth(MONTHS[now.getMonth()]);
-                    setSelectedYear(now.getFullYear().toString());
+                    foundYear = currentYear.toString();
                 }
+
+                // Check for Month (Full or Short name)
+                const monthMatch = dateStr.match(/[a-zA-Z]+/);
+                if (monthMatch) {
+                    // Normalize month name
+                    const m = monthMatch[0];
+                    const normalized = MONTHS.find(mon => mon.toLowerCase().startsWith(m.toLowerCase()));
+                    if (normalized) foundMonth = normalized;
+                }
+
+                if (!foundMonth) foundMonth = MONTHS[new Date().getMonth()];
+
+                setSelectedMonth(foundMonth);
+                setSelectedYear(foundYear);
 
                 // PRELOAD IMAGES
                 album.photos.forEach(photo => {
@@ -126,22 +136,27 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
 
     if (!currentAlbum) return null;
 
-    const handleUpdate = async () => {
-        const newDate = `${selectedMonth} ${selectedYear}`;
+    const saveChanges = async (newTitle: string, newCover: string, newMonth: string, newYear: string) => {
+        const newDate = `${newMonth} ${newYear}`;
 
-        if (title !== currentAlbum.title || newDate !== currentAlbum.date) {
-            // Optimistic Update
-            setCurrentAlbum(prev => prev ? ({ ...prev, title, date: newDate }) : null);
+        // Optimistic Update
+        setCurrentAlbum(prev => prev ? ({ ...prev, title: newTitle, coverUrl: newCover, date: newDate }) : null);
 
-            try {
-                await fetch(`${getApiUrl()}/api/gallery/albums/${currentAlbum.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date: newDate })
-                });
-                onAlbumUpdate?.();
-            } catch (e) { console.error(e); }
+        try {
+            await fetch(`${getApiUrl()}/api/gallery/albums/${currentAlbum.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: newTitle, coverUrl: newCover, date: newDate })
+            });
+            onAlbumUpdate?.();
+        } catch (e) {
+            console.error("Failed to save changes", e);
         }
+    };
+
+    const handleUpdate = () => {
+        // Wrapper for onBlur using current state
+        saveChanges(title, currentAlbum.coverUrl, selectedMonth, selectedYear);
     };
 
     const handleEditCover = async () => {
@@ -150,21 +165,8 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
 
     const handlePhotoClick = async (photo: Photo) => {
         if (isSelectingCover) {
-            // Optimistic Update
-            setCurrentAlbum(prev => prev ? ({ ...prev, coverUrl: photo.url }) : null);
             setIsSelectingCover(false);
-
-            try {
-                const newDate = `${selectedMonth} ${selectedYear}`;
-                await fetch(`${getApiUrl()}/api/gallery/albums/${currentAlbum.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, coverUrl: photo.url, date: newDate })
-                });
-                onAlbumUpdate?.();
-            } catch (e) {
-                console.error(e);
-            }
+            saveChanges(title, photo.url, selectedMonth, selectedYear);
         } else {
             // Future lightbox logic
         }
@@ -431,17 +433,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                                         onChange={(e) => {
                                                             const newMonth = e.target.value;
                                                             setSelectedMonth(newMonth);
-                                                            // Trigger update with new value immediately
-                                                            const newDate = `${newMonth} ${selectedYear}`;
-                                                            // We replicate handleUpdate logic here or use a helper. 
-                                                            // For simplicity, let's just inline the fetch or call a flexible saver.
-                                                            // Ideally we updating the 'currentAlbum' instantly for UI snappiness.
-                                                            setCurrentAlbum(prev => prev ? ({ ...prev, date: newDate }) : null);
-                                                            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}`, {
-                                                                method: 'PUT',
-                                                                headers: { 'Content-Type': 'application/json' },
-                                                                body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date: newDate })
-                                                            }).then(() => onAlbumUpdate?.());
+                                                            saveChanges(title, currentAlbum.coverUrl, newMonth, selectedYear);
                                                         }}
                                                         className="bg-transparent border-b border-white/10 focus:border-primary outline-none text-white cursor-pointer hover:text-primary transition-colors appearance-none py-0.5"
                                                     >
@@ -452,13 +444,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                                         onChange={(e) => {
                                                             const newYear = e.target.value;
                                                             setSelectedYear(newYear);
-                                                            const newDate = `${selectedMonth} ${newYear}`;
-                                                            setCurrentAlbum(prev => prev ? ({ ...prev, date: newDate }) : null);
-                                                            fetch(`${getApiUrl()}/api/gallery/albums/${currentAlbum.id}`, {
-                                                                method: 'PUT',
-                                                                headers: { 'Content-Type': 'application/json' },
-                                                                body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date: newDate })
-                                                            }).then(() => onAlbumUpdate?.());
+                                                            saveChanges(title, currentAlbum.coverUrl, selectedMonth, newYear);
                                                         }}
                                                         className="bg-transparent border-b border-white/10 focus:border-primary outline-none text-white cursor-pointer hover:text-primary transition-colors appearance-none py-0.5"
                                                     >
