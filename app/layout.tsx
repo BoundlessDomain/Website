@@ -2,9 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 import TopBar from "@/components/ui/TopBar";
-import dynamic from 'next/dynamic';
-
-const DebugOverlay = dynamic(() => import('@/components/ui/DebugOverlay'), { ssr: false });
 
 export const metadata: Metadata = {
     title: "BobbyYu Website",
@@ -21,7 +18,6 @@ export default function RootLayout({
             <body className="antialiased font-sans">
                 <ThemeProvider>
                     <TopBar />
-                    <DebugOverlay />
                     {children}
                 </ThemeProvider>
             </body>

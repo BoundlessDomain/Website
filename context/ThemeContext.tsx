@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { themes, ThemeKey, DEFAULT_THEME } from "@/utils/theme";
 import { supabase } from "@/utils/supabase";
 
+import DebugOverlay from "@/components/ui/DebugOverlay";
+
 interface ThemeContextType {
     theme: ThemeKey;
     setTheme: (theme: ThemeKey) => void;
@@ -35,7 +37,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                     localStorage.setItem("theme", userTheme);
                 }
             }
-            // Removed SIGNED_OUT reset logic to persist theme across sessions
         });
 
         return () => subscription.unsubscribe();
@@ -67,6 +68,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <ThemeContext.Provider value={{ theme, setTheme }}>
+            <DebugOverlay />
             {children}
         </ThemeContext.Provider>
     );
