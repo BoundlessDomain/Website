@@ -351,6 +351,92 @@ def get_photos():
         print(f"Gallery Error: {e}")
         return {"highlights": [], "albums": []}
 
+class AlbumModel(BaseModel):
+    title: str
+    coverUrl: Optional[str] = ""
+    date: Optional[str] = ""
+
+@app.post("/api/gallery/albums")
+def create_album(album: AlbumModel):
+    supabase_client = get_supabase()
+    try:
+        new_id = str(uuid.uuid4())
+        # Default cover if empty
+        cover = album.coverUrl if album.coverUrl else "https://images.unsplash.com/photo-1492684223066-81342ee5ff30"
+        
+        # Use provided date or default to now
+        date_label = album.date if album.date else datetime.now().strftime("%B %Y")
+
+        data = {
+            "id": new_id,
+            "title": album.title,
+            "cover_url": cover,
+            "date_label": date_label
+        }
+        res = supabase_client.table("albums").insert(data).execute()
+        return {"status": "success", "album": res.data[0] if res.data else data}
+    except Exception as e:
+        print(f"Create Album Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/gallery/albums/{album_id}")
+def update_album(album_id: str, album: AlbumModel):
+    supabase_client = get_supabase()
+    try:
+        data = {
+            "title": album.title,
+            "cover_url": album.coverUrl,
+            "date_label": album.date
+        }
+        supabase_client.table("albums").update(data).eq("id", album_id).execute()
+        return {"status": "success"}
+    except Exception as e:
+        print(f"Update Album Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/gallery/albums/{album_id}")
+def delete_album(album_id: str):
+    supabase_client = get_supabase()
+    try:
+        # Cascade delete should rely on DB relations, but let's be explicit if needed.
+        # Assuming DB is set to cascade delete photos on album delete.
+        supabase_client.table("albums").delete().eq("id", album_id).execute()
+        return {"status": "success"}
+    except Exception as e:
+        print(f"Delete Album Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+class PhotoModel(BaseModel):
+    url: str
+    type: str = "image"
+
+@app.post("/api/gallery/albums/{album_id}/photos")
+def add_photo(album_id: str, photo: PhotoModel):
+    supabase_client = get_supabase()
+    try:
+        new_id = str(uuid.uuid4())
+        data = {
+            "id": new_id,
+            "album_id": album_id,
+            "url": photo.url,
+            "type": photo.type
+        }
+        res = supabase_client.table("photos").insert(data).execute()
+        return {"status": "success", "photo": res.data[0] if res.data else data}
+    except Exception as e:
+        print(f"Add Photo Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/gallery/albums/{album_id}/photos/{photo_id}")
+def delete_photo(album_id: str, photo_id: str):
+    supabase_client = get_supabase()
+    try:
+        supabase_client.table("photos").delete().eq("id", photo_id).execute()
+        return {"status": "success"}
+    except Exception as e:
+        print(f"Delete Photo Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/gallery/highlights/shuffle")
 def shuffle_highlights():
     supabase_client = get_supabase()
