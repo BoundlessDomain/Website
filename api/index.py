@@ -124,11 +124,8 @@ def get_navigation():
         # Optimization: Fetch all nav items in one query instead of two
         nav_res = supabase_client.table("navigation").select("*").order("sort_order").execute()
         
-        # Site settings (separate table)
-        debug_res = supabase_client.table("site_settings").select("value").eq("key", "isDebugMode").execute()
+        # Site settings - REMOVED (Table deleted)
         is_debug = False
-        if debug_res.data:
-            is_debug = debug_res.data[0]["value"]
             
         all_items = nav_res.data if nav_res.data else []
         
@@ -235,7 +232,10 @@ def seed_defaults():
 def update_navigation(data: NavigationData):
     supabase_client = get_supabase()
     try:
-        supabase_client.table("site_settings").upsert({"key": "isDebugMode", "value": data.isDebugMode}).execute()
+        # Debug Mode sync removed as site_settings table is deleted.
+        # Frontend state is sufficient for current session.
+        # supabase_client.table("site_settings").upsert({"key": "isDebugMode", "value": data.isDebugMode}).execute()
+        pass
         
         # Replace Left
         supabase_client.table("navigation").delete().eq("side", "left").execute()

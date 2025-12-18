@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings, Palette, Check, Battery, ChevronLeft, Zap, ZapOff, Bug } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
@@ -11,12 +11,19 @@ import clsx from "clsx";
 export default function SettingsMenu() {
     const [isOpen, setIsOpen] = useState(false);
     const [showThemes, setShowThemes] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    // HYDRATION FIX: Wait for mount to avoid mismatch on persisted store values
+    useEffect(() => setMounted(true), []);
+
     const { theme, setTheme } = useTheme();
     const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
     const setLowPowerMode = useUIStore((state) => state.setLowPowerMode);
     const isDebugMode = useUIStore((state) => state.isDebugMode);
     const setDebugMode = useUIStore((state) => state.setDebugMode);
     const isOwner = useUIStore((state) => state.isOwner);
+
+    if (!mounted) return null; // Or render a skeleton/simplistic button only
 
     return (
         <div className={clsx("relative pointer-events-auto", isOpen ? "z-50" : "z-auto")}>
