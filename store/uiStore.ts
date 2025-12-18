@@ -105,7 +105,7 @@ export const useUIStore = create<UIState>()(
                         set({
                             leftNavItems: data.leftNavItems,
                             rightNavItems: data.rightNavItems,
-                            // isDebugMode: data.isDebugMode // REMOVED: Keep local only
+                            isDebugMode: data.isDebugMode
                         });
                     }
                 } catch (error) {

@@ -139,8 +139,13 @@ def get_navigation():
         
         for item in all_items:
             # Create cleaner dict
+            label = item.get("label")
+            # FIX: Explicitly exclude CONTACTS from the menu (it should only be in footer/special areas)
+            if label == "CONTACTS":
+                continue
+
             clean_item = {
-                "label": item.get("label"),
+                "label": label,
                 "href": item.get("href"),
                 "iconName": item.get("icon_name") or item.get("iconName") or "FileText", # Handle both
                 "side": item.get("side")
@@ -200,8 +205,7 @@ def seed_defaults():
             {"label": "GALLERY", "iconName": "Camera", "href": "/gallery", "side": "left", "sort_order": 2},
             {"label": "POEMS", "iconName": "Feather", "href": "/poems", "side": "right", "sort_order": 0},
             {"label": "STORIES", "iconName": "BookOpen", "href": "/stories", "side": "right", "sort_order": 1},
-            {"label": "ABOUT", "iconName": "User", "href": "/about", "side": "right", "sort_order": 2},
-            {"label": "CONTACTS", "iconName": "Users", "href": "/contacts", "side": "right", "sort_order": 3}
+            {"label": "ABOUT", "iconName": "User", "href": "/about", "side": "right", "sort_order": 2}
         ]
 
         # Insert
