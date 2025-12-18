@@ -132,9 +132,30 @@ def get_navigation():
             
         all_items = nav_res.data if nav_res.data else []
         
-        # Filter in Python
-        left_items = [item for item in all_items if item.get("side") == "left"]
-        right_items = [item for item in all_items if item.get("side") == "right"]
+        # Map snake_case (DB) to camelCase (Frontend)
+        # and filter by side
+        left_items = []
+        right_items = []
+        
+        for item in all_items:
+            # Create cleaner dict
+            clean_item = {
+                "label": item.get("label"),
+                "href": item.get("href"),
+                "iconName": item.get("icon_name") or item.get("iconName") or "FileText", # Handle both
+                "side": item.get("side")
+            }
+            
+            if item.get("side") == "left":
+                left_items.append(clean_item)
+            elif item.get("side") == "right":
+                right_items.append(clean_item)
+
+        # FAIL SAFE: If DB is empty keys or error in filtering, return defaults
+        # This is CRITICAL because if the API returns empty, the UI is broken.
+        if not left_items and not right_items:
+             print("Warning: Database returned empty navigation. Using defaults.")
+             raise Exception("Empty Navigation")
             
         return {
             "leftNavItems": left_items,
@@ -143,7 +164,20 @@ def get_navigation():
         }
     except Exception as e:
         print(f"Error loading navigation: {e}")
-        return {"leftNavItems": [], "rightNavItems": [], "isDebugMode": False}
+        # FAIL SAFE: Return defaults if DB crashes so the site still works
+        return {
+            "leftNavItems": [
+                {"label": "ARTICLES", "iconName": "FileText", "href": "/articles", "side": "left", "sort_order": 0},
+                {"label": "RECIPES", "iconName": "Utensils", "href": "/recipes", "side": "left", "sort_order": 1},
+                {"label": "GALLERY", "iconName": "Camera", "href": "/gallery", "side": "left", "sort_order": 2}
+            ],
+            "rightNavItems": [
+                {"label": "POEMS", "iconName": "Feather", "href": "/poems", "side": "right", "sort_order": 0},
+                {"label": "STORIES", "iconName": "BookOpen", "href": "/stories", "side": "right", "sort_order": 1},
+                {"label": "ABOUT", "iconName": "User", "href": "/about", "side": "right", "sort_order": 2}
+            ],
+            "isDebugMode": False
+        }
 
 
 @app.api_route("/api/seed-defaults", methods=["GET", "POST"])
