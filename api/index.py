@@ -25,10 +25,10 @@ STARTUP_ERROR = None
 try:
     # Try importing from local directory first
     try:
-        from db import get_supabase
+        from _db import get_supabase
     except ImportError:
         # Fallback for some Vercel environments where .api might be needed
-        from api.db import get_supabase
+        from api._db import get_supabase
 except Exception as e:
     STARTUP_ERROR = f"Import Error: {e}\n{traceback.format_exc()}"
     print(STARTUP_ERROR)
