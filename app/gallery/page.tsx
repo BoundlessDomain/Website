@@ -14,9 +14,11 @@ export default function GalleryPage() {
     const [selectedAlbum, setSelectedAlbum] = useState<any | null>(null);
     const [initialPhotoId, setInitialPhotoId] = useState<string | undefined>(undefined);
 
+    import { getApiUrl } from "@/utils/api";
+
     const fetchGallery = useCallback(async () => {
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const apiUrl = getApiUrl();
             const res = await fetch(`${apiUrl}/api/gallery`);
             if (!res.ok) throw new Error("Network response was not ok");
             const jsonData = await res.json();
@@ -90,6 +92,7 @@ export default function GalleryPage() {
                     <AlbumRow
                         albums={data.albums || []}
                         onSelectAlbum={handleSelectAlbum}
+                        onAlbumCreate={fetchGallery}
                     />
 
                     <AnimatePresence>

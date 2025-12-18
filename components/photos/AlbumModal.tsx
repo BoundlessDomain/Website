@@ -6,6 +6,7 @@ import { X, Calendar, Image as ImageIcon, Edit2, Plus, UploadCloud, Trash2 } fro
 import { useUIStore } from "@/store/uiStore";
 import clsx from "clsx";
 import { supabase } from "@/utils/supabase";
+import { getApiUrl } from "@/utils/api";
 
 interface Photo {
     id: string;
@@ -95,7 +96,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                 album.photos.forEach(photo => {
                     if (photo.type !== "video") {
                         const img = new Image();
-                        img.src = `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/proxy?url=${encodeURIComponent(photo.url)}`;
+                        img.src = `${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`;
                     }
                 });
             }
@@ -127,7 +128,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
             setCurrentAlbum(prev => prev ? ({ ...prev, title, date: newDate }) : null);
 
             try {
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}`, {
+                await fetch(`${getApiUrl()}/api/gallery/albums/${currentAlbum.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date: newDate })
@@ -149,7 +150,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
 
             try {
                 const newDate = `${selectedMonth} ${selectedYear}`;
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}`, {
+                await fetch(`${getApiUrl()}/api/gallery/albums/${currentAlbum.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title, coverUrl: photo.url, date: newDate })
@@ -193,7 +194,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
             }
 
             // 2. Delete from Backend (and Cache)
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}/photos/${photoId}`, {
+            await fetch(`${getApiUrl()}/api/gallery/albums/${currentAlbum.id}/photos/${photoId}`, {
                 method: 'DELETE',
             });
             onAlbumUpdate?.(); // Notify parent to refresh data
@@ -204,7 +205,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
         if (confirmText !== currentAlbum.title) return;
 
         try {
-            await fetch(`http://localhost:8000/api/gallery/albums/${currentAlbum.id}`, {
+            await fetch(`${getApiUrl()}/api/gallery/albums/${currentAlbum.id}`, {
                 method: 'DELETE',
             });
             onClose();
@@ -300,7 +301,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                     .getPublicUrl(fileName);
 
                 // 3. Save to Backend
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}/photos`, {
+                const res = await fetch(`${getApiUrl()}/api/gallery/albums/${currentAlbum.id}/photos`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: publicUrl, type: fileType })
@@ -447,7 +448,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                                             setSelectedYear(newYear);
                                                             const newDate = `${selectedMonth} ${newYear}`;
                                                             setCurrentAlbum(prev => prev ? ({ ...prev, date: newDate }) : null);
-                                                            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}`, {
+                                                            fetch(`${getApiUrl()}/api/gallery/albums/${currentAlbum.id}`, {
                                                                 method: 'PUT',
                                                                 headers: { 'Content-Type': 'application/json' },
                                                                 body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date: newDate })
@@ -565,8 +566,8 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                 {photo.type === "video" ? (
                                     <div className="w-full relative group">
                                         <video
-                                            src={`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/proxy?url=${encodeURIComponent(photo.url)}`}
-                                            className="w-full h-auto object-contain block"
+                                            src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
+                                            className="w-full h-auto object-contain block" // Removed zoom here too
                                             controls={!isSelectingCover}
                                             preload="metadata" // Optimisation: Don't auto-download heavy bits
                                             loop
@@ -576,7 +577,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                     </div>
                                 ) : (
                                     <img
-                                        src={`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/proxy?url=${encodeURIComponent(photo.url)}`}
+                                        src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
                                         className={clsx(
                                             "w-full h-auto object-contain block"
                                             // Zoom removed here

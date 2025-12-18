@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+python-multipart
+httpx
+aiofiles
+supabase
+gotrue
+postgrest
+realtime

@@ -19,12 +19,15 @@ interface Album {
     photos: Photo[];
 }
 
+import { getApiUrl } from "@/utils/api";
+
 interface AlbumRowProps {
     albums: Album[];
     onSelectAlbum: (album: Album) => void;
+    onAlbumCreate?: () => void;
 }
 
-export default function AlbumRow({ albums, onSelectAlbum }: AlbumRowProps) {
+export default function AlbumRow({ albums, onSelectAlbum, onAlbumCreate }: AlbumRowProps) {
     const isOwner = useUIStore((state) => state.isOwner);
     const [mounted, setMounted] = useState(false);
 
@@ -37,12 +40,12 @@ export default function AlbumRow({ albums, onSelectAlbum }: AlbumRowProps) {
         if (!title) return;
 
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums`, {
+            await fetch(`${getApiUrl()}/api/gallery/albums`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ title, coverUrl: "" })
             });
-            window.location.reload();
+            onAlbumCreate?.();
         } catch (e) {
             console.error(e);
         }

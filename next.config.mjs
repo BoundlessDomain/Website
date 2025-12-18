@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    reactStrictMode: true,
+    reactStrictMode: false,
     transpilePackages: ['three', '@react-three/fiber', '@react-three/drei'],
     eslint: {
         ignoreDuringBuilds: true,

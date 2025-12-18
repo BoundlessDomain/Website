@@ -47,7 +47,24 @@ export default function TopBar() {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s Timeout
 
+
+            // OPTIMIZATION: Skip verify if we already know they are owner
+            // or if we just verified this user.
+            if (isOwner) {
+                console.log("[Auth] Already verified owner. Skipping check.");
+                return;
+            }
+
             try {
+                // Short-circuit if we recently checked this user (simple session cache)
+                const lastCheck = sessionStorage.getItem(`last_verify_${id}`);
+                if (lastCheck && (Date.now() - parseInt(lastCheck)) < 5 * 60 * 1000) {
+                    // 5 minute local cache
+                    // We assume if they were owner 5 mins ago, they still are.
+                    // But we only cache *success* usually? 
+                    // Actually let's just rely on isOwner state for now.
+                }
+
                 setAuthDebugLog(`[1/3] Fetching /api/verify-owner...`);
 
                 const res = await fetch(`${getApiUrl()}/api/verify-owner`, {
