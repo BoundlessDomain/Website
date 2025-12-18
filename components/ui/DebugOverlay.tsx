@@ -27,15 +27,6 @@ export default function DebugOverlay() {
         return () => clearInterval(interval);
     }, [isDebugMode]);
 
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    // HYDRATION FIX: Prevent mismatch by only rendering on client
-    if (!mounted) return null;
-
     // FORCE DEBUG: Always show overlay for troubleshooting
     if (!isDebugMode) return null;
 

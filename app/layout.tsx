@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 import TopBar from "@/components/ui/TopBar";
-import DebugOverlay from "@/components/ui/DebugOverlay";
+import dynamic from 'next/dynamic';
+
+const DebugOverlay = dynamic(() => import('@/components/ui/DebugOverlay'), { ssr: false });
 
 export const metadata: Metadata = {
     title: "BobbyYu Website",
