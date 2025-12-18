@@ -361,13 +361,21 @@ def get_photos():
             final_albums.append(mapped_album)
 
         highlights = []
-        if all_photos:
-            # Use daily seed for consistent shuffle
-            random.seed(int(datetime.now().strftime("%Y%m%d")))
-            
+            # HYBRID SHUFFLE: Try to load seed from DB, fallback to Daily Date
+            try:
+                seed_res = supabase_client.table("site_settings").select("value").eq("key", "shuffleSeed").execute()
+                if seed_res.data and len(seed_res.data) > 0:
+                     random.seed(int(seed_res.data[0]["value"]))
+                else:
+                     # No seed in DB, use Daily Date
+                     random.seed(int(datetime.now().strftime("%Y%m%d")))
+            except Exception:
+                # Table missing or error? Default to Daily Date
+                random.seed(int(datetime.now().strftime("%Y%m%d")))
+
             count = min(len(all_photos), 3)
             highlights = random.sample(all_photos, count)
-            random.seed()
+            random.seed() # Reset global rng
 
         return {"highlights": highlights, "albums": final_albums}
     except Exception as e:

@@ -437,7 +437,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                                             // For simplicity, let's just inline the fetch or call a flexible saver.
                                                             // Ideally we updating the 'currentAlbum' instantly for UI snappiness.
                                                             setCurrentAlbum(prev => prev ? ({ ...prev, date: newDate }) : null);
-                                                            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/gallery/albums/${currentAlbum.id}`, {
+                                                            fetch(`${getApiUrl()}/api/gallery/albums/${currentAlbum.id}`, {
                                                                 method: 'PUT',
                                                                 headers: { 'Content-Type': 'application/json' },
                                                                 body: JSON.stringify({ title, coverUrl: currentAlbum.coverUrl, date: newDate })
