@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Send, X, HelpCircle } from "lucide-react";
 import clsx from "clsx";
+import { getApiUrl } from "@/utils/api";
 
 export default function FeedbackButton() {
     const [isOpen, setIsOpen] = useState(false);
