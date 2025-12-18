@@ -198,8 +198,7 @@ def seed_defaults():
             {"label": "GALLERY", "iconName": "Camera", "href": "/gallery", "side": "left", "sort_order": 2},
             {"label": "POEMS", "iconName": "Feather", "href": "/poems", "side": "right", "sort_order": 0},
             {"label": "STORIES", "iconName": "BookOpen", "href": "/stories", "side": "right", "sort_order": 1},
-            {"label": "ABOUT", "iconName": "User", "href": "/about", "side": "right", "sort_order": 2},
-            {"label": "CONTACTS", "iconName": "Users", "href": "/contacts", "side": "right", "sort_order": 3}
+            {"label": "ABOUT", "iconName": "User", "href": "/about", "side": "right", "sort_order": 2}
         ]
 
         # Insert
@@ -249,6 +248,38 @@ def update_navigation(data: NavigationData):
     except Exception as e:
         print(f"Error saving navigation: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/fix-nav")
+def fix_navigation_structure():
+    """
+    Force resets the navigation to the correct structure:
+    Left: ARTICLES, RECIPES, GALLERY
+    Right: POEMS, STORIES, ABOUT
+    """
+    supabase_client = get_supabase()
+    try:
+        # 1. Clear existing
+        supabase_client.table("navigation").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+        
+        # 2. Define Correct Defaults
+        rows = [
+            # LEFT
+            {"label": "ARTICLES", "icon_name": "FileText", "href": "/articles", "side": "left", "sort_order": 0},
+            {"label": "RECIPES", "icon_name": "Utensils", "href": "/recipes", "side": "left", "sort_order": 1},
+            {"label": "GALLERY", "icon_name": "Camera", "href": "/gallery", "side": "left", "sort_order": 2},
+            
+            # RIGHT
+            {"label": "POEMS", "icon_name": "Feather", "href": "/poems", "side": "right", "sort_order": 0},
+            {"label": "STORIES", "icon_name": "BookOpen", "href": "/stories", "side": "right", "sort_order": 1},
+            {"label": "ABOUT", "icon_name": "User", "href": "/about", "side": "right", "sort_order": 2},
+        ]
+        
+        # 3. Insert
+        supabase_client.table("navigation").insert(rows).execute()
+        
+        return {"status": "success", "message": "Navigation reset to standard configuration."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 # --- Owner Verification ---
 class VerifyOwnerRequest(BaseModel):
