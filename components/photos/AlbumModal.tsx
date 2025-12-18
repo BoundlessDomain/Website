@@ -28,9 +28,19 @@ interface AlbumModalProps {
     onAlbumUpdate?: () => void;
 }
 
+
+const MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
+
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: currentYear - 1999 }, (_, i) => (currentYear - i).toString());
+
 export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpdate }: AlbumModalProps) {
     const isPresent = useIsPresent();
     const isOwner = useUIStore((state) => state.isOwner);
+    const isLowPowerMode = useUIStore((state) => state.isLowPowerMode); // Moved Up
     const [mounted, setMounted] = useState(false);
 
     // Local state to manage the album data without reloading
@@ -41,13 +51,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
     const [selectedMonth, setSelectedMonth] = useState("");
     const [selectedYear, setSelectedYear] = useState("");
 
-    const MONTHS = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
-
-    const currentYear = new Date().getFullYear();
-    const YEARS = Array.from({ length: currentYear - 1999 }, (_, i) => (currentYear - i).toString());
+    // Delete State
 
     // Delete State
     const [isDeleting, setIsDeleting] = useState(false);
@@ -335,7 +339,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
     };
 
 
-    const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
+
 
     return (
         <motion.div
@@ -369,7 +373,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                         <div className="flex-1 flex items-center justify-between animate-pulse bg-red-900/20 p-4 rounded-xl border border-red-500/50">
                             <div className="flex flex-col gap-1">
                                 <span className="text-red-400 font-bold uppercase tracking-widest text-xs">Danger Zone</span>
-                                <span className="text-white text-sm">Type <span className="font-bold text-white select-all">"{currentAlbum.title}"</span> to confirm deletion.</span>
+                                <span className="text-white text-sm">Type <span className="font-bold text-white select-all">&quot;{currentAlbum.title}&quot;</span> to confirm deletion.</span>
                             </div>
                             <div className="flex items-center gap-4">
                                 <input

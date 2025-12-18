@@ -59,6 +59,7 @@ export default function GalleryPage() {
 
     useEffect(() => {
         fetchGallery();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Run once on mount
 
     const handleSelectAlbum = (album: any) => {

@@ -21,6 +21,7 @@ interface HeroHighlightsProps {
 
 export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHighlightsProps) {
     const isOwner = useUIStore((state) => state.isOwner);
+    const isLowPowerMode = useUIStore((state) => state.isLowPowerMode); // Moved up
     const [shuffling, setShuffling] = useState(false);
     const [mounted, setMounted] = useState(false);
 
@@ -45,7 +46,7 @@ export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHi
     const mainHighlight = highlights[0];
     const secondaryHighlights = highlights.slice(1, 3);
 
-    const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
+
 
     return (
         <div className="w-full mb-12 relative group/section">
