@@ -28,7 +28,6 @@ const AVAILABLE_PAGES = [
     { label: "POEMS", href: "/poems", iconName: "Feather" },
     { label: "STORIES", href: "/stories", iconName: "BookOpen" },
     { label: "ABOUT", href: "/about", iconName: "User" },
-    { label: "CONTACTS", href: "/contacts", iconName: "Users" },
 ];
 
 function NavButton({ item, side, onClick, onEdit, isOwner }: {

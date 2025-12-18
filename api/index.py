@@ -137,10 +137,6 @@ def get_navigation():
         for item in all_items:
             # Create cleaner dict
             label = item.get("label")
-            # FIX: Explicitly exclude CONTACTS from the menu
-            if label == "CONTACTS":
-                continue
-
             clean_item = {
                 "label": label,
                 "href": item.get("href"),
