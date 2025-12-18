@@ -53,8 +53,6 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
     const [selectedYear, setSelectedYear] = useState("");
 
     // Delete State
-
-    // Delete State
     const [isDeleting, setIsDeleting] = useState(false);
     const [confirmText, setConfirmText] = useState("");
 
