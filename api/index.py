@@ -25,10 +25,10 @@ STARTUP_ERROR = None
 try:
     # Try importing from local directory first
     try:
-        from _db import get_supabase
+        from db import get_supabase
     except ImportError:
         # Fallback for some Vercel environments where .api might be needed
-        from api._db import get_supabase
+        from api.db import get_supabase
 except Exception as e:
     STARTUP_ERROR = f"Import Error: {e}\n{traceback.format_exc()}"
     print(STARTUP_ERROR)
@@ -139,13 +139,8 @@ def get_navigation():
         
         for item in all_items:
             # Create cleaner dict
-            label = item.get("label")
-            # FIX: Explicitly exclude CONTACTS from the menu (it should only be in footer/special areas)
-            if label == "CONTACTS":
-                continue
-
             clean_item = {
-                "label": label,
+                "label": item.get("label"),
                 "href": item.get("href"),
                 "iconName": item.get("icon_name") or item.get("iconName") or "FileText", # Handle both
                 "side": item.get("side")
@@ -205,7 +200,8 @@ def seed_defaults():
             {"label": "GALLERY", "iconName": "Camera", "href": "/gallery", "side": "left", "sort_order": 2},
             {"label": "POEMS", "iconName": "Feather", "href": "/poems", "side": "right", "sort_order": 0},
             {"label": "STORIES", "iconName": "BookOpen", "href": "/stories", "side": "right", "sort_order": 1},
-            {"label": "ABOUT", "iconName": "User", "href": "/about", "side": "right", "sort_order": 2}
+            {"label": "ABOUT", "iconName": "User", "href": "/about", "side": "right", "sort_order": 2},
+            {"label": "CONTACTS", "iconName": "Users", "href": "/contacts", "side": "right", "sort_order": 3}
         ]
 
         # Insert
