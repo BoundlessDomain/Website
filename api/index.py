@@ -67,7 +67,6 @@ app.add_middleware(
 )
 
 # --- Helper ---
-# --- Helper ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Vercel filesystem is read-only except for /tmp
 CACHE_DIR = "/tmp/cache"
