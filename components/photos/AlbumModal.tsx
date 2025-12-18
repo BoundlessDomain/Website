@@ -70,9 +70,15 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
     }, []);
 
     // Sync state when album opens
+    // Sync state when album opens/updates
     useEffect(() => {
         if (album) {
-            if (!currentAlbum || currentAlbum.id !== album.id) {
+            // Always update local state when prop updates (and on mount)
+            // We check equality to avoid loops if needed, but since album is a new object from parent, we sync.
+            // But to preserve dirty state we might want to be careful. 
+            // However, for this bug (mount init), we simply ensure we parse.
+
+            if (!currentAlbum || currentAlbum.id !== album.id || currentAlbum.date !== album.date) {
                 setCurrentAlbum(album);
                 setTitle(album.title);
 
@@ -101,7 +107,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                 });
             }
         }
-    }, [album, currentAlbum]);
+    }, [album]); // Remove currentAlbum dependency to avoid loops, just react to prop prop changes
 
     // Scroll to initial photo
     useEffect(() => {

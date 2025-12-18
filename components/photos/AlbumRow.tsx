@@ -55,7 +55,7 @@ export default function AlbumRow({ albums, onSelectAlbum, onAlbumCreate }: Album
 
     return (
         <div className="w-full py-8">
-            <div className="flex items-center justify-between border-b border-white/10 mb-6 pb-2">
+            <div className="flex items-center justify-between border-b border-white/10 mb-8 pb-2 relative z-10">
                 <h2 className="text-2xl font-bold text-white tracking-widest">
                     ALBUMS
                 </h2>
