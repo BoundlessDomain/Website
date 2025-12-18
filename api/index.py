@@ -16,7 +16,6 @@ import aiofiles
 import httpx
 from urllib.parse import urlparse
 import ipaddress
-import ipaddress
 import sys
 import traceback
 
