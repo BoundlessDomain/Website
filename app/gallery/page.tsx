@@ -7,6 +7,7 @@ import { Camera, Loader2 } from "lucide-react";
 import PageTransition from "@/components/ui/PageTransition";
 import HeroHighlights from "@/components/photos/HeroHighlights";
 import AlbumRow from "@/components/photos/AlbumRow";
+import { getApiUrl } from "@/utils/api";
 
 export default function GalleryPage() {
     const [data, setData] = useState<{ highlights: any[], albums: any[] } | null>(null);
@@ -14,7 +15,7 @@ export default function GalleryPage() {
     const [selectedAlbum, setSelectedAlbum] = useState<any | null>(null);
     const [initialPhotoId, setInitialPhotoId] = useState<string | undefined>(undefined);
 
-    import { getApiUrl } from "@/utils/api";
+
 
     const fetchGallery = useCallback(async () => {
         try {
