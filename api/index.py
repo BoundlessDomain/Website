@@ -361,6 +361,7 @@ def get_photos():
             final_albums.append(mapped_album)
 
         highlights = []
+        if all_photos:
             # HYBRID SHUFFLE: Try to load seed from DB, fallback to Daily Date
             try:
                 seed_res = supabase_client.table("site_settings").select("value").eq("key", "shuffleSeed").execute()
@@ -469,6 +470,18 @@ def delete_photo(album_id: str, photo_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+@app.post("/api/gallery/highlights/shuffle")
+def shuffle_highlights():
+    supabase_client = get_supabase()
+    try:
+        new_seed = random.randint(1, 1000000)
+        # Try to upsert. If table is missing, this will fail.
+        supabase_client.table("site_settings").upsert({"key": "shuffleSeed", "value": new_seed}).execute()
+        return {"status": "success", "seed": new_seed}
+    except Exception as e:
+        print(f"Shuffle Error: {e}")
+        return {"status": "error", "message": str(e)}
 
 # --- Proxy ---
 @app.get("/api/proxy")
