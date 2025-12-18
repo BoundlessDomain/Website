@@ -20,7 +20,8 @@ export default function GalleryPage() {
     const fetchGallery = useCallback(async () => {
         try {
             const apiUrl = getApiUrl();
-            const res = await fetch(`${apiUrl}/api/gallery`);
+            // Add timestamp to prevent browser caching, and no-store for Next.js caching
+            const res = await fetch(`${apiUrl}/api/gallery?t=${Date.now()}`, { cache: 'no-store' });
             if (!res.ok) throw new Error("Network response was not ok");
             const jsonData = await res.json();
             setData(jsonData);

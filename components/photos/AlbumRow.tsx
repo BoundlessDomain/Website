@@ -54,8 +54,8 @@ export default function AlbumRow({ albums, onSelectAlbum, onAlbumCreate }: Album
     const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
 
     return (
-        <div className="w-full py-8">
-            <div className="flex items-center justify-between border-b border-white/10 mb-8 pb-2 relative z-10">
+        <div className="w-full py-12 md:py-20 relative z-10">
+            <div className="flex items-center justify-between border-b border-white/10 mb-8 pb-2">
                 <h2 className="text-2xl font-bold text-white tracking-widest">
                     ALBUMS
                 </h2>

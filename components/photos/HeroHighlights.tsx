@@ -61,7 +61,7 @@ export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHi
     const secondaryHighlights = highlights.slice(1, 3);
 
     return (
-        <div className="w-full mb-12 relative group/section">
+        <div className="w-full mb-24 md:mb-12 relative group/section">
             <div className="flex items-center justify-between border-b border-white/10 mb-6 pb-2">
                 <h2 className="text-2xl font-bold text-white tracking-widest">
                     HIGHLIGHTS
