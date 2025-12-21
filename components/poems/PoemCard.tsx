@@ -66,7 +66,6 @@ export default function PoemCard({ poem, index, onEdit }: PoemCardProps) {
                         alt={poem.title}
                         className="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none opacity-50" />
                 </div>
             )}
 
