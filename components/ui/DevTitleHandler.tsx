@@ -4,12 +4,35 @@ import { useEffect } from "react";
 
 export default function DevTitleHandler() {
     useEffect(() => {
-        // Change title based on domain
-        if (window.location.hostname.includes("dev.")) {
-            document.title = "{Dev} Bobby's Site";
-        } else if (window.location.hostname === "bobbyyu.me" || window.location.hostname === "www.bobbyyu.me") {
-            document.title = "Bobby's Site";
+        const updateTitle = () => {
+            const hostname = window.location.hostname;
+            const isDev = hostname.includes("dev.");
+            // If we are on dev, ensure title starts with {Dev}
+            if (isDev && !document.title.startsWith("{Dev} ")) {
+                document.title = `{Dev} ${document.title}`;
+            }
+        };
+
+        // Initial check
+        updateTitle();
+
+        // Create an observer instance linked to the callback function
+        const observer = new MutationObserver(() => {
+            updateTitle();
+        });
+
+        // Start observing the target node for configured mutations
+        const titleElement = document.querySelector("title");
+        if (titleElement) {
+            observer.observe(titleElement, { childList: true, subtree: true });
         }
+
+        // Also observe document.title changes directly if possible via head changes
+        // But usually observing the title tag text content is enough for React Helmet/Next Head
+
+        return () => {
+            observer.disconnect();
+        };
     }, []);
 
     return null; // This component renders nothing visual
