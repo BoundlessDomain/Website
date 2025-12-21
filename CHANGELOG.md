@@ -1,5 +1,14 @@
 # Changelog
 
+## [V3.2.0] - 2025-12-21
+### Added
+- **Poems Page**: Redesigned with a balanced masonry layout and strict Oldest -> Newest sorting.
+- **Reactive Visibility**: Hidden poems now instantly disappear upon logout without page refresh.
+- **Owner Controls**: Owners can now Add, Edit, and Hide poems via a refined modal interface.
+
+### Fixed
+- **Stability**: Reverted unstable dynamic homepage navigation to restore core site functionality.
+
 ## [V3.1.0] - 2025-12-18
 ### Added
 - **Dynamic Page Titles**: The browser tab now updates its title based on the environment:
