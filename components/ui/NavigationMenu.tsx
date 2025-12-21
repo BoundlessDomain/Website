@@ -1,5 +1,7 @@
 "use client";
 
+// Trigger deployment check
+
 import { LucideIcon, FileText, Utensils, Camera, Feather, BookOpen, User, Users, Pencil, Check, X } from "lucide-react";
 import { supabase } from "@/utils/supabase";
 import clsx from "clsx";
