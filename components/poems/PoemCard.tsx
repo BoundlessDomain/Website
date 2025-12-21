@@ -30,11 +30,11 @@ export default function PoemCard({ poem, index, onEdit }: PoemCardProps) {
             transition={{ delay: index * 0.1 }}
             className="break-inside-avoid mb-6 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all duration-300 shadow-lg group relative"
         >
-            {/* Edit Button (Visible to owner) */}
+            {/* Edit Button (Visible to owner on hover) */}
             {isOwner && onEdit && (
                 <button
                     onClick={() => onEdit(poem)}
-                    className="absolute top-4 right-4 z-20 bg-black/60 hover:bg-primary text-white hover:text-black p-2 rounded-full transition-all duration-200 backdrop-blur-sm"
+                    className="absolute top-4 right-4 z-20 bg-black/80 hover:bg-black text-red-500 p-2 rounded-full transition-all duration-200 backdrop-blur-sm opacity-0 group-hover:opacity-100 hover:scale-110"
                     title="Edit Poem"
                 >
                     <Pencil size={18} />
@@ -42,14 +42,14 @@ export default function PoemCard({ poem, index, onEdit }: PoemCardProps) {
             )}
 
             {poem.image_url && (
-                <div className="relative h-48 w-full overflow-hidden">
-                    <Image
+                <div className="relative w-full">
+                    {/* Width 100%, Height Auto to show full image */}
+                    <img
                         src={poem.image_url}
                         alt={poem.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-700"
+                        className="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none opacity-50" />
                 </div>
             )}
 

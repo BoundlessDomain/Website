@@ -108,6 +108,30 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess, poem }: AddPo
         }
     };
 
+    const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm'>('idle');
+    const [deleteConfirmation, setDeleteConfirmation] = useState("");
+
+    const handleDelete = async () => {
+        if (deleteConfirmation !== poem.title) {
+            alert("Title mismatch. Please type the exact title to confirm deletion.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const res = await fetch(`${getApiUrl()}/api/poems?id=${poem.id}`, {
+                method: 'DELETE',
+            });
+            if (!res.ok) throw new Error("Failed to delete poem");
+            onSuccess();
+            handleClose();
+        } catch (error: any) {
+            alert(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleClose = () => {
         if (previewUrl && !previewUrl.startsWith('http')) {
             // Only revoke if it's a blob url we created, not if it's a remote URL
@@ -118,6 +142,8 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess, poem }: AddPo
         setBody("");
         setDate(new Date().toISOString().split('T')[0]);
         setFile(null);
+        setDeleteStep('idle');
+        setDeleteConfirmation("");
         onClose();
     };
 
@@ -136,7 +162,13 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess, poem }: AddPo
                             {/* Header */}
                             <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
                                 <h2 className="text-lg font-bold text-white tracking-widest flex items-center gap-2">
-                                    {poem ? "EDIT" : "COMPOSE"} <span className="text-primary">POEM</span>
+                                    {deleteStep === 'confirm' ? (
+                                        <span className="text-red-500">DELETE POEM?</span>
+                                    ) : (
+                                        <>
+                                            {poem ? "EDIT" : "COMPOSE"} <span className="text-primary">POEM</span>
+                                        </>
+                                    )}
                                 </h2>
                                 <button onClick={handleClose} className="text-white/50 hover:text-white">
                                     <X size={20} />
@@ -145,87 +177,137 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess, poem }: AddPo
 
                             {/* Form */}
                             <div className="p-6 overflow-y-auto custom-scrollbar">
-                                <form onSubmit={handleSubmit} className="space-y-4">
-                                    {/* Image Upload */}
-                                    <div className="relative group cursor-pointer border-2 border-dashed border-white/10 rounded-xl overflow-hidden bg-white/5 text-center min-h-[12rem] flex items-center justify-center hover:border-primary/50 transition-colors">
+                                {deleteStep === 'confirm' ? (
+                                    <div className="space-y-6">
+                                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
+                                            <p className="text-red-400 font-bold mb-2">WARNING: IRREVERSIBLE ACTION</p>
+                                            <p className="text-white/60 text-sm">
+                                                To confirm deletion, please type the exact title of the poem:
+                                            </p>
+                                            <p className="mt-2 text-white font-serif font-bold select-all">
+                                                {poem.title}
+                                            </p>
+                                        </div>
+
                                         <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleFileChange}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            type="text"
+                                            value={deleteConfirmation}
+                                            onChange={(e) => setDeleteConfirmation(e.target.value)}
+                                            className="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-white text-center focus:outline-none focus:border-red-500 placeholder:text-white/20"
+                                            placeholder="Type title here..."
                                         />
 
-                                        {previewUrl ? (
-                                            <>
-                                                <img src={previewUrl} alt="Preview" className="w-full h-auto max-h-[500px] object-contain" />
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <span className="text-xs font-bold uppercase text-white tracking-wider">Change Image</span>
+                                        <div className="flex gap-4">
+                                            <button
+                                                onClick={() => setDeleteStep('idle')}
+                                                className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors"
+                                            >
+                                                CANCEL
+                                            </button>
+                                            <button
+                                                onClick={handleDelete}
+                                                disabled={loading || deleteConfirmation !== poem.title}
+                                                className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {loading ? <Loader2 className="animate-spin mx-auto" /> : "CONFIRM DELETE"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleSubmit} className="space-y-4">
+                                        {/* Image Upload */}
+                                        <div className="relative group cursor-pointer border-2 border-dashed border-white/10 rounded-xl overflow-hidden bg-white/5 text-center min-h-[12rem] flex items-center justify-center hover:border-primary/50 transition-colors">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleFileChange}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            />
+
+                                            {previewUrl ? (
+                                                <>
+                                                    <img src={previewUrl} alt="Preview" className="w-full h-auto max-h-[500px] object-contain" />
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <span className="text-xs font-bold uppercase text-white tracking-wider">Change Image</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-2 text-white/40 group-hover:text-primary transition-colors">
+                                                    <Upload size={24} />
+                                                    <span className="text-xs font-bold uppercase tracking-wider">
+                                                        Upload Cover Image (Optional)
+                                                    </span>
                                                 </div>
-                                            </>
-                                        ) : (
-                                            <div className="flex flex-col items-center gap-2 text-white/40 group-hover:text-primary transition-colors">
-                                                <Upload size={24} />
-                                                <span className="text-xs font-bold uppercase tracking-wider">
-                                                    Upload Cover Image (Optional)
-                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Title */}
+                                        <div className="space-y-1">
+                                            <label className="text-xs uppercase text-primary font-bold ml-1">Title</label>
+                                            <div className="relative">
+                                                <Type className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+                                                <input
+                                                    type="text"
+                                                    value={title}
+                                                    onChange={(e) => setTitle(e.target.value)}
+                                                    className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-primary placeholder:text-white/20"
+                                                    placeholder="Enter title..."
+                                                    required
+                                                />
                                             </div>
-                                        )}
-                                    </div>
-
-                                    {/* Title */}
-                                    <div className="space-y-1">
-                                        <label className="text-xs uppercase text-primary font-bold ml-1">Title</label>
-                                        <div className="relative">
-                                            <Type className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={16} />
-                                            <input
-                                                type="text"
-                                                value={title}
-                                                onChange={(e) => setTitle(e.target.value)}
-                                                className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-primary placeholder:text-white/20"
-                                                placeholder="Enter title..."
-                                                required
-                                            />
                                         </div>
-                                    </div>
 
-                                    {/* Date */}
-                                    <div className="space-y-1">
-                                        <label className="text-xs uppercase text-primary font-bold ml-1">Date Written</label>
-                                        <div className="relative">
-                                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={16} />
-                                            <input
-                                                type="date"
-                                                value={date}
-                                                onChange={(e) => setDate(e.target.value)}
-                                                className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-primary placeholder:text-white/20 color-scheme-dark"
-                                                required
-                                            />
+                                        {/* Date */}
+                                        <div className="space-y-1">
+                                            <label className="text-xs uppercase text-primary font-bold ml-1">Date Written</label>
+                                            <div className="relative">
+                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+                                                <input
+                                                    type="date"
+                                                    value={date}
+                                                    onChange={(e) => setDate(e.target.value)}
+                                                    className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-primary placeholder:text-white/20 color-scheme-dark"
+                                                    required
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    {/* Body */}
-                                    <div className="space-y-1">
-                                        <label className="text-xs uppercase text-primary font-bold ml-1">Poem Body</label>
-                                        <div className="relative">
-                                            <AlignLeft className="absolute left-3 top-4 text-white/30" size={16} />
-                                            <textarea
-                                                value={body}
-                                                onChange={(e) => setBody(e.target.value)}
-                                                className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-primary placeholder:text-white/20 min-h-[200px] resize-none font-serif leading-relaxed"
-                                                placeholder="Write your verses here..."
-                                                required
-                                            />
+                                        {/* Body */}
+                                        <div className="space-y-1">
+                                            <label className="text-xs uppercase text-primary font-bold ml-1">Poem Body</label>
+                                            <div className="relative">
+                                                <AlignLeft className="absolute left-3 top-4 text-white/30" size={16} />
+                                                <textarea
+                                                    value={body}
+                                                    onChange={(e) => setBody(e.target.value)}
+                                                    className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-primary placeholder:text-white/20 min-h-[200px] resize-none font-serif leading-relaxed"
+                                                    placeholder="Write your verses here..."
+                                                    required
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="w-full py-4 bg-primary text-black font-bold rounded-xl hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                                    >
-                                        {loading ? <Loader2 className="animate-spin" /> : (poem ? "UPDATE POEM" : "PUBLISH POEM")}
-                                    </button>
-                                </form>
+                                        <div className="flex gap-4 pt-2">
+                                            {poem && (
+                                                <button
+                                                    type="button"
+                                                    disabled={loading}
+                                                    onClick={() => setDeleteStep('confirm')}
+                                                    className="px-6 py-4 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white font-bold rounded-xl transition-colors border border-red-500/20"
+                                                >
+                                                    DELETE
+                                                </button>
+                                            )}
+                                            <button
+                                                type="submit"
+                                                disabled={loading}
+                                                className="flex-1 py-4 bg-primary text-black font-bold rounded-xl hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                            >
+                                                {loading ? <Loader2 className="animate-spin" /> : (poem ? "UPDATE POEM" : "PUBLISH POEM")}
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
                             </div>
                         </div>
                     </motion.div>
