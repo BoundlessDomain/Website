@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { Pencil } from "lucide-react";
+import { Pencil, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import { useUIStore } from "@/store/uiStore";
 
@@ -12,22 +12,24 @@ interface Poem {
     body: string;
     date_written: string;
     image_url?: string | null;
+    is_hidden?: boolean;
 }
 
 interface PoemCardProps {
     poem: Poem;
     index: number;
     onEdit?: (poem: Poem) => void;
+    onToggleHidden?: (poem: Poem) => void;
 }
 
-export default function PoemCard({ poem, index, onEdit }: PoemCardProps) {
+export default function PoemCard({ poem, index, onEdit, onToggleHidden }: PoemCardProps) {
     const isOwner = useUIStore((state) => state.isOwner);
 
     const formatDate = (dateString: string) => {
         if (!dateString) return "";
         try {
             const [year, month, day] = dateString.split("-");
-            // Note: month is 0-indexed in JS Date, but we construct manually or use date-fns if standard
+            // Note: month is 0-indexed in JS Date
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
 
             if (day === "00") {
@@ -45,17 +47,37 @@ export default function PoemCard({ poem, index, onEdit }: PoemCardProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="break-inside-avoid mb-6 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all duration-300 shadow-lg group relative"
+            className={`break-inside-avoid mb-6 bg-black/40 backdrop-blur-md border rounded-2xl overflow-hidden hover:border-white/20 transition-all duration-300 shadow-lg group relative ${poem.is_hidden ? 'border-red-500/30 bg-red-900/10' : 'border-white/10'
+                }`}
         >
-            {/* Edit Button (Visible to owner on hover) */}
-            {isOwner && onEdit && (
-                <button
-                    onClick={() => onEdit(poem)}
-                    className="absolute top-4 right-4 z-20 bg-black/80 hover:bg-black text-red-500 p-2 rounded-full transition-all duration-200 backdrop-blur-sm opacity-0 group-hover:opacity-100 hover:scale-110"
-                    title="Edit Poem"
-                >
-                    <Pencil size={18} />
-                </button>
+            {/* Owner Actions */}
+            {isOwner && (
+                <div className="absolute top-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    {onToggleHidden && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleHidden(poem);
+                            }}
+                            className="bg-black/80 hover:bg-black text-white p-2 rounded-full backdrop-blur-sm hover:scale-110 transition-all shadow-lg border border-white/10"
+                            title={poem.is_hidden ? "Show to Public" : "Hide from Public"}
+                        >
+                            {poem.is_hidden ? <EyeOff size={16} className="text-red-400" /> : <Eye size={16} />}
+                        </button>
+                    )}
+                    {onEdit && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(poem);
+                            }}
+                            className="bg-black/80 hover:bg-black text-red-500 p-2 rounded-full backdrop-blur-sm hover:scale-110 transition-all shadow-lg border border-white/10"
+                            title="Edit Poem"
+                        >
+                            <Pencil size={16} />
+                        </button>
+                    )}
+                </div>
             )}
 
             {poem.image_url && (

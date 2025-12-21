@@ -8,6 +8,8 @@ import { getApiUrl } from "@/utils/api";
 import PoemCard from "@/components/poems/PoemCard";
 import AddPoemModal from "@/components/poems/AddPoemModal";
 
+import { supabase } from "@/utils/supabase";
+
 export default function PoemsPage() {
     const isOwner = useUIStore((state) => state.isOwner);
     const [poems, setPoems] = useState<any[]>([]);
@@ -19,7 +21,15 @@ export default function PoemsPage() {
 
     const fetchPoems = async () => {
         try {
-            const res = await fetch(`${getApiUrl()}/api/poems?t=${Date.now()}`);
+            const headers: HeadersInit = {};
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token) {
+                headers['Authorization'] = `Bearer ${session.access_token}`;
+            }
+
+            const res = await fetch(`${getApiUrl()}/api/poems?t=${Date.now()}`, {
+                headers: headers
+            });
             if (res.ok) {
                 const data = await res.json();
                 setPoems(data);
@@ -43,6 +53,21 @@ export default function PoemsPage() {
     const handleEdit = (poem: any) => {
         setEditingPoem(poem);
         setModalOpen(true);
+    };
+
+    const handleToggleHidden = async (poem: any) => {
+        try {
+            const res = await fetch(`${getApiUrl()}/api/poems`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: poem.id, is_hidden: !poem.is_hidden })
+            });
+            if (!res.ok) throw new Error("Failed to toggle visibility");
+            fetchPoems(); // Refresh list
+        } catch (error) {
+            console.error(error);
+            alert("Error updating visibility");
+        }
     };
 
     return (
@@ -72,15 +97,31 @@ export default function PoemsPage() {
                         No poems written yet.
                     </div>
                 ) : (
-                    <div className="columns-1 md:columns-2 gap-6 space-y-6">
-                        {poems.map((poem, idx) => (
-                            <PoemCard
-                                key={poem.id}
-                                poem={poem}
-                                index={idx}
-                                onEdit={isOwner ? handleEdit : undefined}
-                            />
-                        ))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                        {/* Left Column (Even Indexes) */}
+                        <div className="space-y-6">
+                            {poems.filter((_, i) => i % 2 === 0).map((poem, idx) => (
+                                <PoemCard
+                                    key={poem.id}
+                                    poem={poem}
+                                    index={idx * 2}
+                                    onEdit={isOwner ? handleEdit : undefined}
+                                    onToggleHidden={isOwner ? handleToggleHidden : undefined}
+                                />
+                            ))}
+                        </div>
+                        {/* Right Column (Odd Indexes) */}
+                        <div className="space-y-6">
+                            {poems.filter((_, i) => i % 2 !== 0).map((poem, idx) => (
+                                <PoemCard
+                                    key={poem.id}
+                                    poem={poem}
+                                    index={(idx * 2) + 1}
+                                    onEdit={isOwner ? handleEdit : undefined}
+                                    onToggleHidden={isOwner ? handleToggleHidden : undefined}
+                                />
+                            ))}
+                        </div>
                     </div>
                 )}
 
