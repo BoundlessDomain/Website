@@ -49,13 +49,6 @@ export default function PoemsPage() {
         <PageTransition icon={Feather} title="POEMS">
             <div className="w-full max-w-5xl mx-auto px-4 pb-20 relative">
 
-                {/* Header Quote */}
-                <div className="mb-12 text-center">
-                    <p className="text-xl text-white/80 font-serif italic">
-                        &quot;Code is poetry written for machines to dream.&quot;
-                    </p>
-                </div>
-
                 {/* Owner Action */}
                 {isOwner && (
                     <div className="mb-8 flex justify-end">

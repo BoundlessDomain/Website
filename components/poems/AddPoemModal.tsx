@@ -278,9 +278,19 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess, poem }: AddPo
                                             <div className="relative">
                                                 <AlignLeft className="absolute left-3 top-4 text-white/30" size={16} />
                                                 <textarea
+                                                    ref={(el) => {
+                                                        if (el) {
+                                                            el.style.height = "auto";
+                                                            el.style.height = el.scrollHeight + "px";
+                                                        }
+                                                    }}
                                                     value={body}
-                                                    onChange={(e) => setBody(e.target.value)}
-                                                    className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-primary placeholder:text-white/20 min-h-[200px] resize-none font-serif leading-relaxed"
+                                                    onChange={(e) => {
+                                                        setBody(e.target.value);
+                                                        e.target.style.height = "auto";
+                                                        e.target.style.height = e.target.scrollHeight + "px";
+                                                    }}
+                                                    className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-primary placeholder:text-white/20 min-h-[200px] resize-none font-serif leading-relaxed overflow-hidden"
                                                     placeholder="Write your verses here..."
                                                     required
                                                 />
