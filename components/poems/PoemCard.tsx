@@ -23,6 +23,23 @@ interface PoemCardProps {
 export default function PoemCard({ poem, index, onEdit }: PoemCardProps) {
     const isOwner = useUIStore((state) => state.isOwner);
 
+    const formatDate = (dateString: string) => {
+        if (!dateString) return "";
+        try {
+            const [year, month, day] = dateString.split("-");
+            // Note: month is 0-indexed in JS Date, but we construct manually or use date-fns if standard
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+
+            if (day === "00") {
+                // Return only Month Year
+                return format(new Date(parseInt(year), parseInt(month) - 1, 1), "MMM yyyy");
+            }
+            return format(dateObj, "MMM dd, yyyy");
+        } catch (e) {
+            return dateString;
+        }
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -57,7 +74,7 @@ export default function PoemCard({ poem, index, onEdit }: PoemCardProps) {
                 <div className="flex justify-between items-start mb-4">
                     <h3 className="text-xl font-bold text-white font-serif tracking-wide">{poem.title}</h3>
                     <span className="text-xs text-white/40 font-mono pt-1">
-                        {format(new Date(poem.date_written), "MMM dd, yyyy")}
+                        {formatDate(poem.date_written)}
                     </span>
                 </div>
 

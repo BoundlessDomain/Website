@@ -257,18 +257,60 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess, poem }: AddPo
                                             </div>
                                         </div>
 
-                                        {/* Date */}
+                                        {/* Date Selection */}
                                         <div className="space-y-1">
                                             <label className="text-xs uppercase text-primary font-bold ml-1">Date Written</label>
-                                            <div className="relative">
-                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={16} />
-                                                <input
-                                                    type="date"
-                                                    value={date}
-                                                    onChange={(e) => setDate(e.target.value)}
-                                                    className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-primary placeholder:text-white/20 color-scheme-dark"
-                                                    required
-                                                />
+                                            <div className="flex gap-2">
+                                                {/* Month */}
+                                                <div className="relative flex-1">
+                                                    <select
+                                                        value={date.split('-')[1]}
+                                                        onChange={(e) => {
+                                                            const [y, _, d] = date.split('-');
+                                                            setDate(`${y}-${e.target.value}-${d}`);
+                                                        }}
+                                                        className="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-white appearance-none focus:outline-none focus:border-primary cursor-pointer"
+                                                    >
+                                                        {Array.from({ length: 12 }, (_, i) => {
+                                                            const m = (i + 1).toString().padStart(2, '0');
+                                                            return <option key={m} value={m}>{new Date(2000, i, 1).toLocaleString('default', { month: 'long' })}</option>;
+                                                        })}
+                                                    </select>
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/30">▼</div>
+                                                </div>
+
+                                                {/* Day */}
+                                                <div className="relative w-24">
+                                                    <select
+                                                        value={date.split('-')[2]}
+                                                        onChange={(e) => {
+                                                            const [y, m, _] = date.split('-');
+                                                            setDate(`${y}-${m}-${e.target.value}`);
+                                                        }}
+                                                        className="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-white appearance-none focus:outline-none focus:border-primary cursor-pointer"
+                                                    >
+                                                        <option value="00">--</option>
+                                                        {Array.from({ length: 31 }, (_, i) => {
+                                                            const d = (i + 1).toString().padStart(2, '0');
+                                                            return <option key={d} value={d}>{i + 1}</option>;
+                                                        })}
+                                                    </select>
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/30">▼</div>
+                                                </div>
+
+                                                {/* Year */}
+                                                <div className="relative w-32">
+                                                    <input
+                                                        type="number"
+                                                        value={date.split('-')[0]}
+                                                        onChange={(e) => {
+                                                            const [_, m, d] = date.split('-');
+                                                            setDate(`${e.target.value}-${m}-${d}`);
+                                                        }}
+                                                        className="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary placeholder:text-white/20"
+                                                        placeholder="Year"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
 
