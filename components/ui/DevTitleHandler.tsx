@@ -21,10 +21,10 @@ export default function DevTitleHandler() {
             updateTitle();
         });
 
-        // Start observing the target node for configured mutations
-        const titleElement = document.querySelector("title");
-        if (titleElement) {
-            observer.observe(titleElement, { childList: true, subtree: true });
+        // Start observing the head for changes (including title replacements)
+        const headElement = document.querySelector("head");
+        if (headElement) {
+            observer.observe(headElement, { childList: true, subtree: true });
         }
 
         // Also observe document.title changes directly if possible via head changes
