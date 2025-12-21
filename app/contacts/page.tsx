@@ -2,8 +2,24 @@
 
 import { Users } from "lucide-react";
 import PageTransition from "@/components/ui/PageTransition";
+import { useEffect } from "react";
+import { useUIStore } from "@/store/uiStore";
+import { useRouter } from "next/navigation";
 
 export default function ContactsPage() {
+    const isLoggedIn = useUIStore((state) => state.isLoggedIn);
+    const router = useRouter();
+
+    useEffect(() => {
+        // Immediate redirect if not logged in
+        if (!isLoggedIn) {
+            router.push("/");
+        }
+    }, [isLoggedIn, router]);
+
+    // PREVENT RENDER if not logged in (to avoid flash)
+    if (!isLoggedIn) return null;
+
     return (
         <PageTransition icon={Users} title="CONTACTS">
             <div className="p-8 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)]">

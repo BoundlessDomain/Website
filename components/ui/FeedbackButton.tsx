@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Send, X, HelpCircle } from "lucide-react";
+import { MessageSquare, Send, X, HelpCircle, Paperclip, File as FileIcon, Trash2 } from "lucide-react";
 import clsx from "clsx";
 import { getApiUrl } from "@/utils/api";
 
@@ -10,8 +10,16 @@ export default function FeedbackButton() {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
     const [contact, setContact] = useState("");
+    const [file, setFile] = useState<File | null>(null);
     const [isSending, setIsSending] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -19,15 +27,23 @@ export default function FeedbackButton() {
 
         setIsSending(true);
         try {
+            const formData = new FormData();
+            formData.append("message", message);
+            formData.append("contact", contact);
+            if (file) {
+                formData.append("file", file);
+            }
+
             const res = await fetch(`${getApiUrl()}/api/feedback`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message, contact })
+                body: formData,
             });
+
             if (res.ok) {
                 setShowSuccess(true);
                 setMessage("");
                 setContact("");
+                setFile(null);
                 setTimeout(() => {
                     setShowSuccess(false);
                     setIsOpen(false);
@@ -107,6 +123,44 @@ export default function FeedbackButton() {
                                             placeholder="What's on your mind?"
                                             className="w-full h-32 bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-primary/50 resize-none"
                                             required
+                                        />
+                                    </div>
+
+                                    {/* Attachment Section */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1 ml-1">
+                                            <label className="text-xs font-bold text-white/70">Attachment (Optional)</label>
+                                            {file && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFile(null)}
+                                                    className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1"
+                                                >
+                                                    <Trash2 size={10} /> Remove
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {!file ? (
+                                            <div
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="w-full h-12 border border-dashed border-white/20 rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:border-primary/50 transition-all text-white/50"
+                                            >
+                                                <Paperclip size={16} />
+                                                <span className="text-xs">Add a photo or video</span>
+                                            </div>
+                                        ) : (
+                                            <div className="w-full h-12 bg-white/5 border border-primary/30 rounded-xl flex items-center px-3 gap-3">
+                                                <FileIcon className="text-primary" size={16} />
+                                                <span className="text-sm text-white truncate flex-1">{file.name}</span>
+                                            </div>
+                                        )}
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            className="hidden"
+                                            accept="image/*,video/*"
+                                            onChange={handleFileChange}
                                         />
                                     </div>
 

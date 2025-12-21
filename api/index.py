@@ -489,3 +489,77 @@ async def proxy_image(url: str, request: Request):
     if not url:
         raise HTTPException(status_code=400, detail="Missing URL")
     return RedirectResponse(url=url)
+
+# --- Feedback ---
+@app.post("/api/feedback")
+async def submit_feedback(request: Request):
+    """
+    Receives feedback with optional file attachment.
+    Expects Multipart Form Data if file is included, or JSON if just text.
+    For simplicity, we'll try to parse as form data first.
+    """
+    try:
+        # Check content type
+        content_type = request.headers.get("content-type", "")
+        
+        message = ""
+        contact = ""
+        filename = ""
+        file_size = 0
+        
+        if "multipart/form-data" in content_type:
+            form = await request.form()
+            message = form.get("message", "")
+            contact = form.get("contact", "")
+            upload = form.get("file")
+            
+            if upload and hasattr(upload, "filename") and upload.filename:
+                filename = upload.filename
+                # Read file content to get size (and effectively "upload" it)
+                # In a real app we would upload the bytes to Supabase Storage S3
+                contents = await upload.read()
+                file_size = len(contents)
+                # For local dev we could save it, but for Vercel we just log the receipt
+                print(f"[Feedback] Received file: {filename} ({file_size} bytes)")
+        
+        else:
+            # JSON Fallback
+            data = await request.json()
+            message = data.get("message", "")
+            contact = data.get("contact", "")
+            
+        # Log to Console / Stdout for Vercel Logs
+        log_entry = {
+             "timestamp": str(datetime.now()),
+             "message": message,
+             "contact": contact,
+             "attachment": filename,
+             "size": file_size
+        }
+        print(f"[FEEDBACK] {json.dumps(log_entry)}")
+        
+        # Append to local log file if possible (Local Dev)
+        try:
+            log_path = os.path.join(BASE_DIR, "feedback_log.json")
+            existing_logs = []
+            if os.path.exists(log_path):
+                try:
+                    with open(log_path, "r") as f:
+                        content = f.read()
+                        if content:
+                             existing_logs = json.loads(content)
+                except:
+                    pass
+            
+            existing_logs.append(log_entry)
+            
+            with open(log_path, "w") as f:
+                json.dump(existing_logs, f, indent=2)
+        except Exception as e:
+            print(f"Could not write to local log file: {e}")
+
+        return {"status": "success", "message": "Feedback received"}
+        
+    except Exception as e:
+        print(f"Feedback Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

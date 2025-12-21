@@ -10,6 +10,7 @@ import { User as SupabaseUser } from "@supabase/supabase-js";
 import { isAdmin } from "@/utils/roles";
 import { useUIStore } from "@/store/uiStore";
 import { getApiUrl } from "@/utils/api";
+import { useRouter, usePathname } from "next/navigation";
 
 function getNameFromEmail(email?: string) {
     if (!email) return "User";
@@ -112,7 +113,16 @@ export default function TopBar() {
         return () => subscription.unsubscribe();
     }, [setOwner, setLoggedIn]);
 
+    const router = useRouter();
+    const pathname = usePathname();
+
     const handleLogout = async () => {
+        // If on contacts page, redirect IMMEDIATELY before clearing state/auth
+        // to prevent seeing the "restricted" state or flash.
+        if (pathname === '/contacts') {
+            router.push('/');
+        }
+
         // Explicitly clear state immediately for UI responsiveness
         setOwner(false);
         setLoggedIn(false);

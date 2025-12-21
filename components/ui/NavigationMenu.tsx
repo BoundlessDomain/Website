@@ -46,9 +46,9 @@ function NavButton({ item, side, onClick, onEdit, isOwner }: {
 
     return (
         <a href={item.href} onClick={onClick} className={clsx(
-            "group relative flex items-center justify-between gap-4 p-2 transition-all duration-300",
-            side === 'left' ? "flex-row-reverse text-right w-72" :
-                side === 'right' ? "flex-row text-left w-72" :
+            "group relative flex items-center justify-between gap-2 md:gap-4 p-1 md:p-2 transition-all duration-300",
+            side === 'left' ? "flex-row text-left w-60 md:flex-row-reverse md:text-right md:w-72" :
+                side === 'right' ? "flex-row text-left w-60 md:w-72" :
                     "flex-col text-center w-auto gap-2", // Center variant
             // Pause interactions if Login is Open or Navigating
             (isLoginOpen || navState !== 'idle') ? "pointer-events-none opacity-50 grayscale" : "hover:scale-105 pointer-events-auto"
@@ -56,7 +56,7 @@ function NavButton({ item, side, onClick, onEdit, isOwner }: {
             {/* Text Label */}
             <span className={clsx(
                 "text-primary-text font-bold tracking-widest transition-opacity duration-300 whitespace-nowrap",
-                "text-lg drop-shadow-[0_0_5px_var(--primary-glow)]",
+                "text-sm md:text-lg drop-shadow-[0_0_5px_var(--primary-glow)]",
                 side === 'center' && "order-2" // Text below icon for center
             )}>
                 {item.label}
@@ -64,21 +64,22 @@ function NavButton({ item, side, onClick, onEdit, isOwner }: {
 
             {/* Circle Button */}
             <div className={clsx(
-                "relative w-16 h-16 rounded-full border-2 border-primary bg-glass flex items-center justify-center",
+                "relative w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-primary bg-glass flex items-center justify-center",
                 "shadow-[0_0_15px_var(--primary-glow)] group-hover:shadow-[0_0_25px_var(--primary-glow)]",
                 "group-hover:border-white transition-all duration-300",
                 side === 'center' && "order-1" // Icon above text
             )}>
-                <IconComponent className="w-8 h-8 text-primary-text group-hover:text-white transition-colors" />
+                <IconComponent className="w-6 h-6 md:w-8 md:h-8 text-primary-text group-hover:text-white transition-colors" />
 
                 {/* Edit Pencil Icon (Owner Only) */}
                 {isOwner && !isLoginOpen && (
                     <div
                         onClick={(e) => { e.stopPropagation(); e.preventDefault(); onEdit(e); }}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-red-400 z-50 pointer-events-auto"
+                        className="absolute -top-2 -right-2 w-5 h-5 md:w-6 md:h-6 bg-red-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-red-400 z-50 pointer-events-auto"
                         title="Edit Link"
                     >
-                        <Pencil size={12} className="text-white" />
+                        <Pencil size={10} className="text-white md:hidden" />
+                        <Pencil size={12} className="text-white hidden md:block" />
                     </div>
                 )}
             </div>
@@ -86,8 +87,8 @@ function NavButton({ item, side, onClick, onEdit, isOwner }: {
             {/* Connecting Line (Decorative) - Moved to be "under" text */}
             {side !== 'center' && (
                 <div className={clsx(
-                    "absolute bottom-0 w-12 h-[2px] bg-secondary-dark -z-10 group-hover:bg-primary transition-colors",
-                    side === 'left' ? "right-10 translate-x-full" : "left-10 -translate-x-full"
+                    "absolute bottom-0 w-8 md:w-12 h-[2px] bg-secondary-dark -z-10 group-hover:bg-primary transition-colors",
+                    side === 'left' ? "right-8 md:right-10 translate-x-full" : "left-8 md:left-10 -translate-x-full"
                 )} />
             )}
         </a>
@@ -180,16 +181,16 @@ export default function NavigationMenu() {
     }, [returningLabel, setNavState, setReturningLabel, leftItems, rightItems]);
 
     return (
-        <div className="absolute inset-0 z-40 pointer-events-none flex justify-between items-center px-20">
+        <div className="absolute inset-0 z-40 pointer-events-none flex flex-col md:flex-row justify-center md:justify-between items-start md:items-center px-4 md:px-20 pt-24 md:pt-0 gap-8 md:gap-0">
             {/* Left Menu Items - Individual Floating Windows */}
-            <div className="flex flex-col gap-6 items-end">
+            <div className="flex flex-col gap-4 md:gap-6 items-start md:items-end">
                 {leftItems.map((item, i) => (
                     <motion.div
                         key={i}
                         layoutId={`menu-item-${item.label}`}
                         className={clsx(
-                            "p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
-                            i === 1 ? "mr-12" : "",
+                            "p-3 md:p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
+                            i === 1 ? "ml-8 md:ml-0 md:mr-12" : "",
                             (activeItem?.label === item.label) ? "opacity-0" : "opacity-100"
                         )}
                         animate={(isLoginOpen || isLowPowerMode) ? {} : {
@@ -215,14 +216,14 @@ export default function NavigationMenu() {
             </div>
 
             {/* Right Menu Items - Individual Floating Windows */}
-            <div className="flex flex-col gap-6 items-start">
+            <div className="flex flex-col gap-4 md:gap-6 items-start">
                 {rightItems.map((item, i) => (
                     <motion.div
                         key={i}
                         layoutId={`menu-item-${item.label}`}
                         className={clsx(
-                            "p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
-                            i === 1 ? "ml-12" : "",
+                            "p-3 md:p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
+                            i === 1 ? "ml-8 md:ml-12" : "",
                             (activeItem?.label === item.label) ? "opacity-0" : "opacity-100"
                         )}
                         animate={(isLoginOpen || isLowPowerMode) ? {} : {
