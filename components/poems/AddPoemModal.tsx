@@ -147,25 +147,23 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess, poem }: AddPo
                             <div className="p-6 overflow-y-auto custom-scrollbar">
                                 <form onSubmit={handleSubmit} className="space-y-4">
                                     {/* Image Upload */}
-                                    <div className="relative group border-2 border-dashed border-white/10 rounded-xl overflow-hidden bg-white/5 text-center h-48 flex items-center justify-center hover:border-primary/50 transition-colors">
-                                        {/* IMPORTANT: Input needs to be z-20 to definitely be clickable above everything else */}
+                                    <div className="relative group cursor-pointer border-2 border-dashed border-white/10 rounded-xl overflow-hidden bg-white/5 text-center min-h-[12rem] flex items-center justify-center hover:border-primary/50 transition-colors">
                                         <input
                                             type="file"
                                             accept="image/*"
                                             onChange={handleFileChange}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                         />
 
                                         {previewUrl ? (
                                             <>
-                                                {/* Image needs to be lower z-index */}
-                                                <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover z-0" />
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                                                <img src={previewUrl} alt="Preview" className="w-full h-auto max-h-[500px] object-contain" />
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <span className="text-xs font-bold uppercase text-white tracking-wider">Change Image</span>
                                                 </div>
                                             </>
                                         ) : (
-                                            <div className="flex flex-col items-center gap-2 text-white/40 group-hover:text-primary transition-colors z-0">
+                                            <div className="flex flex-col items-center gap-2 text-white/40 group-hover:text-primary transition-colors">
                                                 <Upload size={24} />
                                                 <span className="text-xs font-bold uppercase tracking-wider">
                                                     Upload Cover Image (Optional)
