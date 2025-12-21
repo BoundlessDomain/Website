@@ -19,7 +19,9 @@ export async function POST(req: Request) {
         }
 
         // 1. Simple Email Check (Fastest)
-        if (email === OWNER_EMAIL) {
+        console.log(`[VerifyOwner] Checking: ${email} vs ${OWNER_EMAIL}`);
+        if (email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
+            console.log("[VerifyOwner] MATCH!");
             return NextResponse.json({ isOwner: true });
         }
 
