@@ -19,6 +19,16 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess }: AddPoemModa
     const [body, setBody] = useState("");
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [file, setFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = e.target.files?.[0];
+        if (selectedFile) {
+            setFile(selectedFile);
+            const url = URL.createObjectURL(selectedFile);
+            setPreviewUrl(url);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,7 +47,7 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess }: AddPoemModa
                     .from('poem-images')
                     .upload(filePath, file);
 
-                if (uploadError) throw uploadError;
+                if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
                 const { data: { publicUrl } } = supabase.storage
                     .from('poem-images')
@@ -58,19 +68,24 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess }: AddPoemModa
                 })
             });
 
-            if (!res.ok) throw new Error("Failed to save poem");
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || "Failed to save poem");
+            }
 
             onSuccess();
             handleClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert("Error creating poem");
+            alert(`Error creating poem: ${error.message}`);
         } finally {
             setLoading(false);
         }
     };
 
     const handleClose = () => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
         setTitle("");
         setBody("");
         setDate(new Date().toISOString().split('T')[0]);
@@ -104,19 +119,29 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess }: AddPoemModa
                             <div className="p-6 overflow-y-auto custom-scrollbar">
                                 <form onSubmit={handleSubmit} className="space-y-4">
                                     {/* Image Upload */}
-                                    <div className="relative group cursor-pointer border-2 border-dashed border-white/10 rounded-xl p-8 hover:border-primary/50 transition-colors bg-white/5 text-center">
+                                    <div className="relative group cursor-pointer border-2 border-dashed border-white/10 rounded-xl overflow-hidden bg-white/5 text-center h-48 flex items-center justify-center hover:border-primary/50 transition-colors">
                                         <input
                                             type="file"
                                             accept="image/*"
-                                            onChange={(e) => setFile(e.target.files?.[0] || null)}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            onChange={handleFileChange}
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                         />
-                                        <div className="flex flex-col items-center gap-2 text-white/40 group-hover:text-primary transition-colors">
-                                            <Upload size={24} />
-                                            <span className="text-xs font-bold uppercase tracking-wider">
-                                                {file ? file.name : "Upload Cover Image (Optional)"}
-                                            </span>
-                                        </div>
+
+                                        {previewUrl ? (
+                                            <>
+                                                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <span className="text-xs font-bold uppercase text-white tracking-wider">Change Image</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-2 text-white/40 group-hover:text-primary transition-colors">
+                                                <Upload size={24} />
+                                                <span className="text-xs font-bold uppercase tracking-wider">
+                                                    Upload Cover Image (Optional)
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Title */}
