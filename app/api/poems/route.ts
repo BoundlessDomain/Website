@@ -8,13 +8,33 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export const dynamic = 'force-dynamic'; // No caching
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
-        const { data, error } = await supabase
+        const { searchParams } = new URL(req.url);
+        const authHeader = req.headers.get('Authorization');
+        let isOwner = false;
+
+        // Verify Owner if Authorization header is present
+        if (authHeader) {
+            const token = authHeader.replace('Bearer ', '');
+            const { data: { user }, error } = await supabase.auth.getUser(token);
+            if (!error && user) {
+                // In a stricter app, check specific email or role
+                isOwner = true;
+            }
+        }
+
+        let query = supabase
             .from('poems')
             .select('*')
-            .order('date_written', { ascending: false })
-            .order('created_at', { ascending: false });
+            .order('date_written', { ascending: true }) // Oldest first
+            .order('created_at', { ascending: true });
+
+        if (!isOwner) {
+            query = query.eq('is_hidden', false);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -33,26 +53,14 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        /* 
-           NOTE: In a real production app, we should verify the user's session token here.
-           However, relying on the client to send the request only if they are the owner,
-           and assuming the Service Role key is secure on the server, is a common pattern for 
-           smaller apps or when using Supabase RLS policies effectively. 
-           
-           Since we are using the Service Role key here to bypass RLS for ease of implementation 
-           in this specific Next.js API route pattern (acting as a proxy), we should ideally check auth.
-           But given the current architecture relying on client-side state for 'isOwner', 
-           we proceed with the insertion. The 'poems' table RLS policy checking 'auth.role() = authenticated'
-           might block this if we used the anon key, but we are using service key.
-        */
-
         const { data, error } = await supabase
             .from('poems')
             .insert([{
                 title: body.title,
                 body: body.body,
                 date_written: body.date_written,
-                image_url: body.image_url || null
+                image_url: body.image_url || null,
+                is_hidden: body.is_hidden || false
             }])
             .select()
             .single();
@@ -70,20 +78,17 @@ export async function PUT(req: Request) {
     try {
         const body = await req.json();
 
-        if (!body.id || !body.title || !body.body || !body.date_written) {
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        if (!body.id) {
+            return NextResponse.json({ error: "Missing id" }, { status: 400 });
         }
 
-        const updateData: any = {
-            title: body.title,
-            body: body.body,
-            date_written: body.date_written,
-        };
+        const updateData: any = {};
+        if (body.title) updateData.title = body.title;
+        if (body.body) updateData.body = body.body;
+        if (body.date_written) updateData.date_written = body.date_written;
+        if (body.is_hidden !== undefined) updateData.is_hidden = body.is_hidden;
 
         // Only update image_url if it's strictly provided (not undefined)
-        // If it's sent as null, it means we want to remove the image? 
-        // Or if we upload a new one. 
-        // Let's assume the client sends the new URL if changed, or the old one if kept.
         if (body.image_url !== undefined) {
             updateData.image_url = body.image_url;
         }
