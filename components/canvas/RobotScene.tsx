@@ -47,7 +47,7 @@ export default function RobotScene({ floorColor = "#0f172a", shiftRight = false 
                 {/* Floor reflection effect */}
                 <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]} receiveShadow>
                     <planeGeometry args={[50, 50]} />
-                    <meshStandardMaterial color={floorColor} roughness={0.1} metalness={0.8} />
+                    <meshStandardMaterial color={floorColor} roughness={0.8} metalness={0.2} />
                 </mesh>
 
                 <OrbitControls enableZoom={false} enablePan={false} enableRotate={false} />

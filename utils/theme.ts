@@ -7,7 +7,7 @@ export const themes = {
             "primary-text": "#22d3ee", // Cyan-400
             secondary: "#3b82f6",      // Blue-500
             "secondary-dark": "#1d4ed8", // Blue-700
-            background: "#ff0000",     // DEBUG RED
+            background: "#1e1b4b",     // Indigo-950 (Slightly lighter than Slate-950)
             "robot-body": "#a855f7",   // Purple
             "robot-details": "#00ffff", // Cyan
             "robot-metal": "#64748b",  // Slate
