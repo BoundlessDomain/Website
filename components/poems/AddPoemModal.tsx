@@ -322,6 +322,7 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess, poem }: AddPo
                                                 <textarea
                                                     ref={(el) => {
                                                         if (el) {
+                                                            // Set initial height
                                                             el.style.height = "auto";
                                                             el.style.height = el.scrollHeight + "px";
                                                         }
@@ -329,8 +330,13 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess, poem }: AddPo
                                                     value={body}
                                                     onChange={(e) => {
                                                         setBody(e.target.value);
-                                                        e.target.style.height = "auto";
-                                                        e.target.style.height = e.target.scrollHeight + "px";
+                                                        // Only adjust height if growing is needed.
+                                                        // We avoid resetting to 'auto' to prevent scroll jumps.
+                                                        // This means the textarea won't shrink if text is deleted, 
+                                                        // but it solves the user's "autoscroll" issue.
+                                                        if (e.target.scrollHeight > e.target.clientHeight) {
+                                                            e.target.style.height = e.target.scrollHeight + "px";
+                                                        }
                                                     }}
                                                     className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-primary placeholder:text-white/20 min-h-[200px] resize-none font-serif leading-relaxed overflow-hidden"
                                                     placeholder="Write your verses here..."
