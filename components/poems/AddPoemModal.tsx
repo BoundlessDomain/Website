@@ -261,24 +261,6 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess, poem }: AddPo
                                         <div className="space-y-1">
                                             <label className="text-xs uppercase text-primary font-bold ml-1">Date Written</label>
                                             <div className="flex gap-2">
-                                                {/* Month */}
-                                                <div className="relative flex-1">
-                                                    <select
-                                                        value={date.split('-')[1]}
-                                                        onChange={(e) => {
-                                                            const [y, _, d] = date.split('-');
-                                                            setDate(`${y}-${e.target.value}-${d}`);
-                                                        }}
-                                                        className="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-white appearance-none focus:outline-none focus:border-primary cursor-pointer"
-                                                    >
-                                                        {Array.from({ length: 12 }, (_, i) => {
-                                                            const m = (i + 1).toString().padStart(2, '0');
-                                                            return <option key={m} value={m}>{new Date(2000, i, 1).toLocaleString('default', { month: 'long' })}</option>;
-                                                        })}
-                                                    </select>
-                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/30">▼</div>
-                                                </div>
-
                                                 {/* Day */}
                                                 <div className="relative w-24">
                                                     <select
@@ -293,6 +275,24 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess, poem }: AddPo
                                                         {Array.from({ length: 31 }, (_, i) => {
                                                             const d = (i + 1).toString().padStart(2, '0');
                                                             return <option key={d} value={d}>{i + 1}</option>;
+                                                        })}
+                                                    </select>
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/30">▼</div>
+                                                </div>
+
+                                                {/* Month */}
+                                                <div className="relative flex-1">
+                                                    <select
+                                                        value={date.split('-')[1]}
+                                                        onChange={(e) => {
+                                                            const [y, _, d] = date.split('-');
+                                                            setDate(`${y}-${e.target.value}-${d}`);
+                                                        }}
+                                                        className="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-white appearance-none focus:outline-none focus:border-primary cursor-pointer"
+                                                    >
+                                                        {Array.from({ length: 12 }, (_, i) => {
+                                                            const m = (i + 1).toString().padStart(2, '0');
+                                                            return <option key={m} value={m}>{new Date(2000, i, 1).toLocaleString('default', { month: 'long' })}</option>;
                                                         })}
                                                     </select>
                                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/30">▼</div>
