@@ -30,14 +30,14 @@ export default function PoemCard({ poem, index, onEdit }: PoemCardProps) {
             transition={{ delay: index * 0.1 }}
             className="break-inside-avoid mb-6 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all duration-300 shadow-lg group relative"
         >
-            {/* Edit Button (Hover only, owner only) */}
+            {/* Edit Button (Visible to owner) */}
             {isOwner && onEdit && (
                 <button
                     onClick={() => onEdit(poem)}
-                    className="absolute top-4 right-4 z-20 bg-black/60 hover:bg-primary text-white hover:text-black p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
+                    className="absolute top-4 right-4 z-20 bg-black/60 hover:bg-primary text-white hover:text-black p-2 rounded-full transition-all duration-200 backdrop-blur-sm"
                     title="Edit Poem"
                 >
-                    <Pencil size={16} />
+                    <Pencil size={18} />
                 </button>
             )}
 
