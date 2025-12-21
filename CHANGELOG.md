@@ -1,5 +1,13 @@
 # Changelog
 
+## [V3.2.1] - 2025-12-21
+### Fixed
+- **Authentication**: Resolved issue where owner verification failed after login.
+  - Implemented client-side email verification for immediate feedback.
+  - Configured case-insensitive email matching.
+  - Restored missing `verify-owner` API route as a fallback.
+  - Updated default owner email configuration.
+
 ## [V3.2.0] - 2025-12-21
 ### Added
 - **Poems Page**: Redesigned with a balanced masonry layout and strict Oldest -> Newest sorting.
