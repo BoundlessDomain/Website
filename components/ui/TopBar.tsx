@@ -56,13 +56,13 @@ export default function TopBar() {
             }
 
             try {
-                // Short-circuit if we recently checked this user (simple session cache)
-                const lastCheck = sessionStorage.getItem(`last_verify_${id}`);
-                if (lastCheck && (Date.now() - parseInt(lastCheck)) < 5 * 60 * 1000) {
-                    // 5 minute local cache
-                    // We assume if they were owner 5 mins ago, they still are.
-                    // But we only cache *success* usually? 
-                    // Actually let's just rely on isOwner state for now.
+                // Client-side Owner Check (Immediate Feedback)
+                const ownerEmail = process.env.NEXT_PUBLIC_OWNER_EMAIL || 'Home.BobbyYu@gmail.com';
+                if (email && email.toLowerCase() === ownerEmail.toLowerCase()) {
+                    console.log("[Auth] Client-side owner match!");
+                    setOwner(true);
+                    setAuthDebugLog(`[Client] Verified Owner: ${email}`);
+                    return; // Skip server check if client matches
                 }
 
                 setAuthDebugLog(`[1/3] Fetching /api/verify-owner...`);
