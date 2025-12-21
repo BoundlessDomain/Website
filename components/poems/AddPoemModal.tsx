@@ -1,25 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Upload, Calendar, Type, AlignLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/utils/supabase";
 import { getApiUrl } from "@/utils/api";
-import clsx from "clsx";
 
 interface AddPoemModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    poem?: any; // If provided, we are in EDIT mode
 }
 
-export default function AddPoemModal({ isOpen, onClose, onSuccess }: AddPoemModalProps) {
+export default function AddPoemModal({ isOpen, onClose, onSuccess, poem }: AddPoemModalProps) {
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState("");
     const [body, setBody] = useState("");
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    // Populate form when poem prop changes (Edit Mode)
+    useEffect(() => {
+        if (isOpen && poem) {
+            setTitle(poem.title);
+            setBody(poem.body);
+            setDate(poem.date_written);
+            setPreviewUrl(poem.image_url); // Use existing image as preview
+            setFile(null); // Reset file input
+        } else if (isOpen && !poem) {
+            // Reset for Create Mode
+            setTitle("");
+            setBody("");
+            setDate(new Date().toISOString().split('T')[0]);
+            setPreviewUrl(null);
+            setFile(null);
+        }
+    }, [isOpen, poem]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -35,9 +53,9 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess }: AddPoemModa
         setLoading(true);
 
         try {
-            let imageUrl = null;
+            let imageUrl = poem?.image_url || null; // Default to existing URL in edit mode
 
-            // 1. Upload Image if exists
+            // 1. Upload NEW Image if one was selected
             if (file) {
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -56,16 +74,23 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess }: AddPoemModa
                 imageUrl = publicUrl;
             }
 
-            // 2. Save Poem Data via API
+            // 2. Save/Update via API
+            const method = poem ? 'PUT' : 'POST';
+            const payload: any = {
+                title,
+                body,
+                date_written: date,
+                image_url: imageUrl
+            };
+
+            if (poem) {
+                payload.id = poem.id; // Include ID for updates
+            }
+
             const res = await fetch(`${getApiUrl()}/api/poems`, {
-                method: 'POST',
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title,
-                    body,
-                    date_written: date,
-                    image_url: imageUrl
-                })
+                body: JSON.stringify(payload)
             });
 
             if (!res.ok) {
@@ -77,14 +102,17 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess }: AddPoemModa
             handleClose();
         } catch (error: any) {
             console.error(error);
-            alert(`Error creating poem: ${error.message}`);
+            alert(`Error saving poem: ${error.message}`);
         } finally {
             setLoading(false);
         }
     };
 
     const handleClose = () => {
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        if (previewUrl && !previewUrl.startsWith('http')) {
+            // Only revoke if it's a blob url we created, not if it's a remote URL
+            URL.revokeObjectURL(previewUrl);
+        }
         setPreviewUrl(null);
         setTitle("");
         setBody("");
@@ -108,7 +136,7 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess }: AddPoemModa
                             {/* Header */}
                             <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
                                 <h2 className="text-lg font-bold text-white tracking-widest flex items-center gap-2">
-                                    COMPOSE <span className="text-primary">POEM</span>
+                                    {poem ? "EDIT" : "COMPOSE"} <span className="text-primary">POEM</span>
                                 </h2>
                                 <button onClick={handleClose} className="text-white/50 hover:text-white">
                                     <X size={20} />
@@ -119,23 +147,25 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess }: AddPoemModa
                             <div className="p-6 overflow-y-auto custom-scrollbar">
                                 <form onSubmit={handleSubmit} className="space-y-4">
                                     {/* Image Upload */}
-                                    <div className="relative group cursor-pointer border-2 border-dashed border-white/10 rounded-xl overflow-hidden bg-white/5 text-center h-48 flex items-center justify-center hover:border-primary/50 transition-colors">
+                                    <div className="relative group border-2 border-dashed border-white/10 rounded-xl overflow-hidden bg-white/5 text-center h-48 flex items-center justify-center hover:border-primary/50 transition-colors">
+                                        {/* IMPORTANT: Input needs to be z-20 to definitely be clickable above everything else */}
                                         <input
                                             type="file"
                                             accept="image/*"
                                             onChange={handleFileChange}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                                         />
 
                                         {previewUrl ? (
                                             <>
-                                                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {/* Image needs to be lower z-index */}
+                                                <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover z-0" />
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
                                                     <span className="text-xs font-bold uppercase text-white tracking-wider">Change Image</span>
                                                 </div>
                                             </>
                                         ) : (
-                                            <div className="flex flex-col items-center gap-2 text-white/40 group-hover:text-primary transition-colors">
+                                            <div className="flex flex-col items-center gap-2 text-white/40 group-hover:text-primary transition-colors z-0">
                                                 <Upload size={24} />
                                                 <span className="text-xs font-bold uppercase tracking-wider">
                                                     Upload Cover Image (Optional)
@@ -195,7 +225,7 @@ export default function AddPoemModal({ isOpen, onClose, onSuccess }: AddPoemModa
                                         disabled={loading}
                                         className="w-full py-4 bg-primary text-black font-bold rounded-xl hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
-                                        {loading ? <Loader2 className="animate-spin" /> : "PUBLISH POEM"}
+                                        {loading ? <Loader2 className="animate-spin" /> : (poem ? "UPDATE POEM" : "PUBLISH POEM")}
                                     </button>
                                 </form>
                             </div>

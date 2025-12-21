@@ -7,13 +7,15 @@ import { useUIStore } from "@/store/uiStore";
 import { getApiUrl } from "@/utils/api";
 import PoemCard from "@/components/poems/PoemCard";
 import AddPoemModal from "@/components/poems/AddPoemModal";
-import { AnimatePresence } from "framer-motion";
 
 export default function PoemsPage() {
     const isOwner = useUIStore((state) => state.isOwner);
     const [poems, setPoems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isAddOpen, setAddOpen] = useState(false);
+
+    // Modal State
+    const [isModalOpen, setModalOpen] = useState(false);
+    const [editingPoem, setEditingPoem] = useState<any | undefined>(undefined);
 
     const fetchPoems = async () => {
         try {
@@ -33,6 +35,16 @@ export default function PoemsPage() {
         fetchPoems();
     }, []);
 
+    const handleCreate = () => {
+        setEditingPoem(undefined);
+        setModalOpen(true);
+    };
+
+    const handleEdit = (poem: any) => {
+        setEditingPoem(poem);
+        setModalOpen(true);
+    };
+
     return (
         <PageTransition icon={Feather} title="POEMS">
             <div className="w-full max-w-5xl mx-auto px-4 pb-20 relative">
@@ -48,7 +60,7 @@ export default function PoemsPage() {
                 {isOwner && (
                     <div className="mb-8 flex justify-end">
                         <button
-                            onClick={() => setAddOpen(true)}
+                            onClick={handleCreate}
                             className="bg-primary hover:bg-white text-black font-bold py-2 px-6 rounded-full flex items-center gap-2 transition-all shadow-[0_0_20px_var(--primary-glow)]"
                         >
                             <Plus size={18} />
@@ -69,16 +81,22 @@ export default function PoemsPage() {
                 ) : (
                     <div className="columns-1 md:columns-2 gap-6 space-y-6">
                         {poems.map((poem, idx) => (
-                            <PoemCard key={poem.id} poem={poem} index={idx} />
+                            <PoemCard
+                                key={poem.id}
+                                poem={poem}
+                                index={idx}
+                                onEdit={isOwner ? handleEdit : undefined}
+                            />
                         ))}
                     </div>
                 )}
 
                 {/* Modal */}
                 <AddPoemModal
-                    isOpen={isAddOpen}
-                    onClose={() => setAddOpen(false)}
+                    isOpen={isModalOpen}
+                    onClose={() => setModalOpen(false)}
                     onSuccess={fetchPoems}
+                    poem={editingPoem}
                 />
             </div>
         </PageTransition>

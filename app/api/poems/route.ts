@@ -65,3 +65,41 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+export async function PUT(req: Request) {
+    try {
+        const body = await req.json();
+
+        if (!body.id || !body.title || !body.body || !body.date_written) {
+            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        }
+
+        const updateData: any = {
+            title: body.title,
+            body: body.body,
+            date_written: body.date_written,
+        };
+
+        // Only update image_url if it's strictly provided (not undefined)
+        // If it's sent as null, it means we want to remove the image? 
+        // Or if we upload a new one. 
+        // Let's assume the client sends the new URL if changed, or the old one if kept.
+        if (body.image_url !== undefined) {
+            updateData.image_url = body.image_url;
+        }
+
+        const { data, error } = await supabase
+            .from('poems')
+            .update(updateData)
+            .eq('id', body.id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return NextResponse.json(data);
+    } catch (error: any) {
+        console.error("Error updating poem:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}

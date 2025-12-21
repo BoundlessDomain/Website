@@ -2,7 +2,9 @@
 
 import { motion } from "framer-motion";
 import { format } from "date-fns";
+import { Pencil } from "lucide-react";
 import Image from "next/image";
+import { useUIStore } from "@/store/uiStore";
 
 interface Poem {
     id: string;
@@ -15,16 +17,30 @@ interface Poem {
 interface PoemCardProps {
     poem: Poem;
     index: number;
+    onEdit?: (poem: Poem) => void;
 }
 
-export default function PoemCard({ poem, index }: PoemCardProps) {
+export default function PoemCard({ poem, index, onEdit }: PoemCardProps) {
+    const isOwner = useUIStore((state) => state.isOwner);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="break-inside-avoid mb-6 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all duration-300 shadow-lg group"
+            className="break-inside-avoid mb-6 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all duration-300 shadow-lg group relative"
         >
+            {/* Edit Button (Hover only, owner only) */}
+            {isOwner && onEdit && (
+                <button
+                    onClick={() => onEdit(poem)}
+                    className="absolute top-4 right-4 z-20 bg-black/60 hover:bg-primary text-white hover:text-black p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
+                    title="Edit Poem"
+                >
+                    <Pencil size={16} />
+                </button>
+            )}
+
             {poem.image_url && (
                 <div className="relative h-48 w-full overflow-hidden">
                     <Image
@@ -33,7 +49,7 @@ export default function PoemCard({ poem, index }: PoemCardProps) {
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-700"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
                 </div>
             )}
 
