@@ -5,7 +5,12 @@ import { Suspense, useState, useEffect } from "react";
 import { OrbitControls } from "@react-three/drei";
 import Robot from "./Robot";
 
-export default function RobotScene() {
+// Add props interface
+interface RobotSceneProps {
+    floorColor?: string;
+}
+
+export default function RobotScene({ floorColor = "#0f172a" }: RobotSceneProps) {
     const [eventSource, setEventSource] = useState<HTMLElement | undefined>(undefined);
 
     useEffect(() => {
@@ -41,7 +46,7 @@ export default function RobotScene() {
                 {/* Floor reflection effect */}
                 <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]} receiveShadow>
                     <planeGeometry args={[50, 50]} />
-                    <meshStandardMaterial color="#0f172a" roughness={0.1} metalness={0.8} />
+                    <meshStandardMaterial color={floorColor} roughness={0.1} metalness={0.8} />
                 </mesh>
 
                 <OrbitControls enableZoom={false} enablePan={false} enableRotate={false} />

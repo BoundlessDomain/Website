@@ -7,7 +7,7 @@ export const themes = {
             "primary-text": "#22d3ee", // Cyan-400
             secondary: "#3b82f6",      // Blue-500
             "secondary-dark": "#1d4ed8", // Blue-700
-            background: "#020617",     // Slate-950
+            background: "#0f172a",     // Slate-900 (Was Slate-950)
             "robot-body": "#a855f7",   // Purple
             "robot-details": "#00ffff", // Cyan
             "robot-metal": "#64748b",  // Slate
@@ -21,7 +21,7 @@ export const themes = {
             "primary-text": "#4ade80", // Green-400
             secondary: "#15803d",      // Green-700
             "secondary-dark": "#14532d", // Green-900
-            background: "#050505",     // Blackish
+            background: "#0a0a0a",     // Neutral-950 (Was Blackish)
             "robot-body": "#166534",   // Green
             "robot-details": "#00ff00", // Bright Green
             "robot-metal": "#27272a",  // Zinc
@@ -35,7 +35,7 @@ export const themes = {
             "primary-text": "#f0abfc", // Fuchsia-300
             secondary: "#8b5cf6",      // Violet-500
             "secondary-dark": "#4c1d95", // Violet-900
-            background: "#2a043b",     // Deep Purple
+            background: "#3b0764",     // Purple-950 (Was Deep Purple)
             "robot-body": "#db2777",   // Pink
             "robot-details": "#3b82f6", // Blue
             "robot-metal": "#4c1d95",  // Violet
@@ -49,7 +49,7 @@ export const themes = {
             "primary-text": "#fdba74", // Orange-300
             secondary: "#ef4444",      // Red-500
             "secondary-dark": "#991b1b", // Red-800
-            background: "#431407",     // Brown
+            background: "#451a03",     // Amber-950 (Was Brown)
             "robot-body": "#ea580c",   // Orange
             "robot-details": "#fbbf24", // Amber
             "robot-metal": "#78350f",  // Brown

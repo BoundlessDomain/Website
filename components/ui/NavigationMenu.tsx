@@ -190,7 +190,7 @@ export default function NavigationMenu() {
                         layoutId={`menu-item-${item.label}`}
                         className={clsx(
                             "p-3 md:p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
-                            i === 1 ? "ml-8 md:ml-0 md:mr-12" : "",
+                            i === 1 ? "md:mr-12" : "",
                             (activeItem?.label === item.label) ? "opacity-0" : "opacity-100"
                         )}
                         animate={(isLoginOpen || isLowPowerMode) ? {} : {
@@ -223,7 +223,7 @@ export default function NavigationMenu() {
                         layoutId={`menu-item-${item.label}`}
                         className={clsx(
                             "p-3 md:p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
-                            i === 1 ? "ml-8 md:ml-12" : "",
+                            i === 1 ? "md:ml-12" : "",
                             (activeItem?.label === item.label) ? "opacity-0" : "opacity-100"
                         )}
                         animate={(isLoginOpen || isLowPowerMode) ? {} : {
