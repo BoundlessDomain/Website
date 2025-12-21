@@ -2,12 +2,11 @@
 
 import { Feather, Plus, Loader2 } from "lucide-react";
 import PageTransition from "@/components/ui/PageTransition";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { getApiUrl } from "@/utils/api";
 import PoemCard from "@/components/poems/PoemCard";
 import AddPoemModal from "@/components/poems/AddPoemModal";
-
 import { supabase } from "@/utils/supabase";
 
 export default function PoemsPage() {
@@ -20,6 +19,9 @@ export default function PoemsPage() {
     const [editingPoem, setEditingPoem] = useState<any | undefined>(undefined);
 
     const fetchPoems = async () => {
+        // Don't set loading to true if we already have data (prevents flashes on hidden toggle)
+        if (poems.length === 0) setLoading(true);
+
         try {
             const headers: HeadersInit = {};
             const { data: { session } } = await supabase.auth.getSession();
@@ -41,9 +43,50 @@ export default function PoemsPage() {
         }
     };
 
+    // Re-fetch when owner status changes (to get hidden poems on login)
     useEffect(() => {
         fetchPoems();
-    }, []);
+    }, [isOwner]);
+
+    // 1. Filter: Instant hide on logout
+    const visiblePoems = useMemo(() => {
+        return poems.filter(p => !p.is_hidden || isOwner);
+    }, [poems, isOwner]);
+
+    // 2. Sort: Oldest to Newest
+    const sortedPoems = useMemo(() => {
+        return [...visiblePoems].sort((a, b) =>
+            new Date(a.date_written).getTime() - new Date(b.date_written).getTime()
+        );
+    }, [visiblePoems]);
+
+    // 3. Layout: Balanced Masonry (Greedy Partition)
+    const { leftCol, rightCol } = useMemo(() => {
+        const left: any[] = [];
+        const right: any[] = [];
+        let leftH = 0;
+        let rightH = 0;
+
+        sortedPoems.forEach((poem) => {
+            // Heuristic Height Estimation:
+            // Base card: ~150px
+            // Text: ~0.5px per char (very rough avg for line wraps)
+            // Image: ~300px (standard aspect ratio guess)
+            const textH = (poem.body?.length || 0) * 0.5;
+            const imgH = poem.image_url ? 300 : 0;
+            const estimatedHeight = 150 + textH + imgH;
+
+            if (leftH <= rightH) {
+                left.push(poem);
+                leftH += estimatedHeight;
+            } else {
+                right.push(poem);
+                rightH += estimatedHeight;
+            }
+        });
+
+        return { leftCol: left, rightCol: right };
+    }, [sortedPoems]);
 
     const handleCreate = () => {
         setEditingPoem(undefined);
@@ -55,18 +98,28 @@ export default function PoemsPage() {
         setModalOpen(true);
     };
 
+    // Optimistic Update for "Hide" toggle to feel instant
     const handleToggleHidden = async (poem: any) => {
+        const newStatus = !poem.is_hidden;
+
+        // Optimistic UI update
+        setPoems(current => current.map(p =>
+            p.id === poem.id ? { ...p, is_hidden: newStatus } : p
+        ));
+
         try {
             const res = await fetch(`${getApiUrl()}/api/poems`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: poem.id, is_hidden: !poem.is_hidden })
+                body: JSON.stringify({ id: poem.id, is_hidden: newStatus })
             });
             if (!res.ok) throw new Error("Failed to toggle visibility");
-            fetchPoems(); // Refresh list
+            // No need to fetchPoems() if optimistic update worked, but good for sync
+            // fetchPoems(); 
         } catch (error) {
             console.error(error);
             alert("Error updating visibility");
+            fetchPoems(); // Revert on error
         }
     };
 
@@ -88,31 +141,31 @@ export default function PoemsPage() {
                 )}
 
                 {/* Content */}
-                {loading ? (
+                {loading && poems.length === 0 ? (
                     <div className="flex justify-center py-20">
                         <Loader2 className="animate-spin text-primary" size={40} />
                     </div>
-                ) : poems.length === 0 ? (
+                ) : sortedPoems.length === 0 ? (
                     <div className="text-center text-white/40 py-20">
                         No poems written yet.
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                        {/* Left Column (Even Indexes) */}
+                        {/* Left Column */}
                         <div className="space-y-6">
-                            {poems.filter((_, i) => i % 2 === 0).map((poem, idx) => (
+                            {leftCol.map((poem, idx) => (
                                 <PoemCard
                                     key={poem.id}
                                     poem={poem}
-                                    index={idx * 2}
+                                    index={idx * 2} // Approx index for anim
                                     onEdit={isOwner ? handleEdit : undefined}
                                     onToggleHidden={isOwner ? handleToggleHidden : undefined}
                                 />
                             ))}
                         </div>
-                        {/* Right Column (Odd Indexes) */}
+                        {/* Right Column */}
                         <div className="space-y-6">
-                            {poems.filter((_, i) => i % 2 !== 0).map((poem, idx) => (
+                            {rightCol.map((poem, idx) => (
                                 <PoemCard
                                     key={poem.id}
                                     poem={poem}
