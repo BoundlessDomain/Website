@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import NavigationMenu from "@/components/ui/NavigationMenu";
 import { useTheme } from '@/context/ThemeContext';
@@ -20,13 +21,22 @@ export default function Home() {
     // Get background from current theme, or fallback to default
     const bgColor = themes[theme]?.colors.background || "#0f172a";
 
+    // Mobile detection for robot positioning
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        handleResize(); // Init
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     return (
         <main
             className="relative w-full h-screen overflow-hidden transition-colors duration-700"
             style={{ backgroundColor: bgColor }}
         >
             <div className="absolute top-0 left-0 w-full h-full z-0">
-                <RobotScene floorColor={bgColor} />
+                <RobotScene floorColor={bgColor} shiftRight={isMobile} />
             </div>
             <NavigationMenu />
         </main>

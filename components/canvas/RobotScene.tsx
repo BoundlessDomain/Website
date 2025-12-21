@@ -8,9 +8,10 @@ import Robot from "./Robot";
 // Add props interface
 interface RobotSceneProps {
     floorColor?: string;
+    shiftRight?: boolean;
 }
 
-export default function RobotScene({ floorColor = "#0f172a" }: RobotSceneProps) {
+export default function RobotScene({ floorColor = "#0f172a", shiftRight = false }: RobotSceneProps) {
     const [eventSource, setEventSource] = useState<HTMLElement | undefined>(undefined);
 
     useEffect(() => {
@@ -19,7 +20,7 @@ export default function RobotScene({ floorColor = "#0f172a" }: RobotSceneProps) 
 
     return (
         <Canvas
-            camera={{ position: [0, 1, 6], fov: 45 }}
+            camera={{ position: [shiftRight ? 2 : 0, 1, 6], fov: 45 }}
             shadows
             eventSource={eventSource}
             eventPrefix="client"
