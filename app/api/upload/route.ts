@@ -1,20 +1,33 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const OWNER_EMAIL = process.env.NEXT_PUBLIC_OWNER_EMAIL!;
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
 export async function POST(req: Request) {
     try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        // const OWNER_EMAIL = process.env.NEXT_PUBLIC_OWNER_EMAIL; // Accessed later
+
+        if (!supabaseUrl || !supabaseServiceKey) {
+            return NextResponse.json({ error: 'Server Configuration Error: Missing Supabase URL or Key' }, { status: 500 });
+        }
+
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
         const formData = await req.formData();
         const file = formData.get('file') as File;
         const email = formData.get('email') as string;
 
-        if (!email || email.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        // Safe access to env var
+        const serverOwnerEmail = process.env.NEXT_PUBLIC_OWNER_EMAIL || "";
+
+        if (!serverOwnerEmail) {
+            return NextResponse.json({ error: "Server Misconfiguration: NEXT_PUBLIC_OWNER_EMAIL is not set on server." }, { status: 500 });
+        }
+
+        if (!email || email.toLowerCase() !== serverOwnerEmail.toLowerCase()) {
+            return NextResponse.json({
+                error: `Unauthorized. Client sent: '${email || "EMPTY"}'. Server expected: '${serverOwnerEmail}'`
+            }, { status: 401 });
         }
 
         if (!file) {

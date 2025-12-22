@@ -1,19 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const OWNER_EMAIL = process.env.NEXT_PUBLIC_OWNER_EMAIL!;
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
 export async function POST(req: Request) {
     try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const OWNER_EMAIL = process.env.NEXT_PUBLIC_OWNER_EMAIL;
+
+        if (!supabaseUrl || !supabaseServiceKey) {
+            return NextResponse.json({ error: 'Server Configuration Error: Missing Supabase URL or Key' }, { status: 500 });
+        }
+
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
         const body = await req.json();
         const { article_id, name, rating, content, date_display, image_url, email } = body;
 
-        if (!email || email.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const safeOwnerEmail = OWNER_EMAIL || "";
+        if (!email || email.toLowerCase() !== safeOwnerEmail.toLowerCase()) {
+            return NextResponse.json({ error: 'Unauthorized: Owner verification failed' }, { status: 401 });
         }
 
         const { data, error } = await supabaseAdmin
