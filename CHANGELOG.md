@@ -1,5 +1,12 @@
 # Changelog
 
+## V3.3.0 - Homepage UI & Mobile Grid
+- **Feature:** Implemented **Mobile Grid Layout** for navigation buttons on small screens (<768px).
+- **Feature:** Added **Matrix Theme** Green background update.
+- **Fix:** Resolved "pitch black" background issue on homepage by replacing opaque floor mesh with contact shadows.
+- **Fix:** Improved Desktop Resizing logic ("Narrow" mode) to prevent button/robot overlap.
+- **Fix:** Updated Robot Arm logic for mobile to track touch interactions in the top half of the screen.
+
 ## [V3.2.1] - 2025-12-21
 ### Fixed
 - **Authentication**: Resolved issue where owner verification failed after login.
