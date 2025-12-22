@@ -20,13 +20,15 @@ export async function POST(req: Request) {
         // Safe access to env var
         const serverOwnerEmail = process.env.NEXT_PUBLIC_OWNER_EMAIL || "";
 
-        if (!serverOwnerEmail) {
+        const safeOwnerEmail = serverOwnerEmail || 'Home.BobbyYu@gmail.com';
+
+        if (!safeOwnerEmail) {
             return NextResponse.json({ error: "Server Misconfiguration: NEXT_PUBLIC_OWNER_EMAIL is not set on server." }, { status: 500 });
         }
 
-        if (!email || email.toLowerCase() !== serverOwnerEmail.toLowerCase()) {
+        if (!email || email.toLowerCase() !== safeOwnerEmail.toLowerCase()) {
             return NextResponse.json({
-                error: `Unauthorized. Client sent: '${email || "EMPTY"}'. Server expected: '${serverOwnerEmail}'`
+                error: `Unauthorized. Client sent: '${email || "EMPTY"}'. Server expected: '${safeOwnerEmail}'`
             }, { status: 401 });
         }
 

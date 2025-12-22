@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         // Since we don't have a session, we'll verify the email passed in body matches owner email.
 
 
-        const safeOwnerEmail = OWNER_EMAIL || "";
+        const safeOwnerEmail = OWNER_EMAIL || 'Home.BobbyYu@gmail.com';
         if (!email || email.toLowerCase() !== safeOwnerEmail.toLowerCase()) {
             return NextResponse.json({ error: 'Unauthorized: Owner verification failed' }, { status: 401 });
         }
