@@ -108,7 +108,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
             const attemptScroll = () => {
                 const element = document.getElementById(`photo-${initialPhotoId}`);
                 if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
                     // Add a temporary highlight
                     element.classList.add('ring-4', 'ring-primary');
                     // Longer duration (3s) so user sees it
