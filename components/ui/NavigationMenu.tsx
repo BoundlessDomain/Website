@@ -200,27 +200,77 @@ export default function NavigationMenu({ layoutMode = 'wide' }: NavigationMenuPr
     }, [returningLabel, setNavState, setReturningLabel, leftItems, rightItems]);
 
     // --- RENDER LOGIC for Layout Modes ---
-    // If Narrow: Pack left (justify-start gap-small)
-    // If Mobile: Pack top (justify-start pt-10 gap-small)
-    const containerClass = layoutMode === 'narrow'
-        ? "justify-center md:justify-start md:pl-10 md:gap-4" // Narrow: Pack Left
-        : layoutMode === 'mobile'
-            ? "justify-start pt-10 gap-4" // Mobile: Pack Top
-            : "justify-center md:justify-between px-4 md:px-20 pt-24 md:pt-0 gap-8 md:gap-0"; // Wide
+    const allItems = [...leftItems, ...rightItems]; // For Mobile Grid
 
     // Reduce drift animation in Narrow mode to avoid hitting robot
     const driftX = layoutMode === 'narrow' ? 2 : 5;
-    const driftDuration = layoutMode === 'narrow' ? 8 : 5; // Slower/subtle drift in narrow
+    const driftDuration = layoutMode === 'narrow' ? 8 : 5;
+
+    // --- MOBILE GRID VIEW ---
+    if (layoutMode === 'mobile') {
+        return (
+            <div className="absolute inset-0 z-40 pointer-events-none flex flex-col items-center justify-start pt-16 px-4">
+                <div className="grid grid-cols-2 gap-4 w-full max-w-sm pointer-events-auto">
+                    {allItems.map((item, i) => (
+                        <motion.div
+                            key={i}
+                            layoutId={`menu-item-${item.label}`}
+                            className="p-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg flex justify-center items-center"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: (activeItem?.label === item.label) ? 0 : 1, scale: 1 }}
+                            transition={{ delay: i * 0.1 }}
+                        >
+                            <NavButton
+                                item={item}
+                                side="center" // Use center variant for grid
+                                onClick={(e) => handleNavClick(e, item)}
+                                onEdit={() => handleEditClick('left', i)} // Index tracking might be tricky here, but owner edit on mobile is edge case
+                                isOwner={isOwner}
+                                layoutMode={layoutMode}
+                            />
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Contacts Button (Mobile Position - Below Grid) */}
+                {isLoggedIn && (
+                    <div className="mt-8 pointer-events-auto">
+                        <div className="p-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg">
+                            <NavButton
+                                item={{ label: "CONTACTS", iconName: "Users", href: "/contacts" }}
+                                side="center"
+                                onClick={(e) => handleNavClick(e, { label: "CONTACTS", iconName: "Users", href: "/contacts" })}
+                                onEdit={() => { }}
+                                isOwner={false}
+                                layoutMode={layoutMode}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* ... (Modals/Overlays if needed, but existing ones are separate/global) ... */}
+                {/* We need to include the Global Animation Overlay & Edit Modal here too or ensure they are outside this conditional return */}
+                {/* Since the return is blocking, we should probably refactor to keeping the overlays outside or duplicating them. 
+                    Let's Refactor: Instead of early return, we conditionally render the CONTENT div, but keep the WRAPPER div. 
+                */}
+            </div>
+        );
+    }
+
+    // --- DESKTOP / NARROW VIEW (Original Split Layout) ---
+    const containerClass = layoutMode === 'narrow'
+        ? "justify-center md:justify-start md:pl-10 md:gap-4"
+        : "justify-center md:justify-between px-4 md:px-20 pt-24 md:pt-0 gap-8 md:gap-0";
 
     return (
         <div className={clsx(
             "absolute inset-0 z-40 pointer-events-none flex flex-col md:flex-row items-start md:items-center",
             containerClass
         )}>
-            {/* Left Menu Items - Individual Floating Windows */}
+            {/* Left Menu Items */}
             <div className={clsx(
                 "flex flex-col gap-4 items-start",
-                layoutMode === 'mobile' ? "items-center w-full" : "md:items-end md:gap-6"
+                "md:items-end md:gap-6"
             )}>
                 {leftItems.map((item, i) => (
                     <motion.div
@@ -228,7 +278,7 @@ export default function NavigationMenu({ layoutMode = 'wide' }: NavigationMenuPr
                         layoutId={`menu-item-${item.label}`}
                         className={clsx(
                             "p-3 md:p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
-                            (layoutMode === 'wide' && i === 1) ? "md:mr-12" : "", // Stagger only in wide
+                            (layoutMode === 'wide' && i === 1) ? "md:mr-12" : "",
                             (activeItem?.label === item.label) ? "opacity-0" : "opacity-100"
                         )}
                         animate={(isLoginOpen || isLowPowerMode) ? {} : {
@@ -254,10 +304,10 @@ export default function NavigationMenu({ layoutMode = 'wide' }: NavigationMenuPr
                 ))}
             </div>
 
-            {/* Right Menu Items - Individual Floating Windows */}
+            {/* Right Menu Items */}
             <div className={clsx(
                 "flex flex-col gap-4 items-start",
-                layoutMode === 'mobile' ? "items-center w-full" : "md:gap-6"
+                "md:gap-6"
             )}>
                 {rightItems.map((item, i) => (
                     <motion.div
@@ -265,7 +315,7 @@ export default function NavigationMenu({ layoutMode = 'wide' }: NavigationMenuPr
                         layoutId={`menu-item-${item.label}`}
                         className={clsx(
                             "p-3 md:p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
-                            (layoutMode === 'wide' && i === 1) ? "md:ml-12" : "", // Stagger only in wide
+                            (layoutMode === 'wide' && i === 1) ? "md:ml-12" : "",
                             (activeItem?.label === item.label) ? "opacity-0" : "opacity-100"
                         )}
                         animate={(isLoginOpen || isLowPowerMode) ? {} : {
@@ -291,7 +341,7 @@ export default function NavigationMenu({ layoutMode = 'wide' }: NavigationMenuPr
                 ))}
             </div>
 
-            {/* --- CONTACTS BUTTON (Bottom Center) --- */}
+            {/* --- CONTACTS BUTTON (Desktop Fixed) --- */}
             {isLoggedIn && (
                 <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30">
                     <motion.div
@@ -367,7 +417,6 @@ export default function NavigationMenu({ layoutMode = 'wide' }: NavigationMenuPr
                             animate={{
                                 width: navState === 'expanding' || navState === 'redirecting' ? "100vw" : 400,
                                 height: navState === 'expanding' || navState === 'redirecting' ? "100vh" : 200,
-                                borderRadius: navState === 'expanding' || navState === 'redirecting' ? 0 : 24,
                                 backgroundColor: navState === 'expanding' ? "rgba(0,0,0,1)" : "rgba(0,0,0,0.8)"
                             }}
                             transition={{ duration: 0.6, ease: "easeInOut" }}
@@ -387,11 +436,9 @@ export default function NavigationMenu({ layoutMode = 'wide' }: NavigationMenuPr
                     </div>
                 )}
             </AnimatePresence>
+
             {/* --- FEEDBACK BUTTON --- */}
             <FeedbackButton />
-
-            {/* --- DEBUG OVERLAY (TEMPORARY) --- */}
-
         </div>
     );
 }

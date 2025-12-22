@@ -21,7 +21,7 @@ export const themes = {
             "primary-text": "#4ade80", // Green-400
             secondary: "#15803d",      // Green-700
             "secondary-dark": "#14532d", // Green-900
-            background: "#0a0a0a",     // Neutral-950 (Was Blackish)
+            background: "#022c22",     // Deep Green Matrix Background
             "robot-body": "#166534",   // Green
             "robot-details": "#00ff00", // Bright Green
             "robot-metal": "#27272a",  // Zinc
