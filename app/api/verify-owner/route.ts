@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+// NOTE: Service Role Key is required for admin actions, but we fallback to empty to avoid build crash
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key";
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const OWNER_EMAIL = process.env.NEXT_PUBLIC_OWNER_EMAIL || 'Home.BobbyYu@gmail.com';

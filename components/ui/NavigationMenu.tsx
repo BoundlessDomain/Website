@@ -47,8 +47,9 @@ function NavButton({ item, side, onClick, onEdit, isOwner }: {
     return (
         <a href={item.href} onClick={onClick} className={clsx(
             "group relative flex items-center justify-between gap-2 md:gap-4 p-1 md:p-2 transition-all duration-300",
-            side === 'left' ? "flex-row text-left w-48 md:flex-row-reverse md:text-right md:w-72" :
-                side === 'right' ? "flex-row text-left w-48 md:w-72" :
+            // FLUID SIZING: Use clamp() for continuous resizing between mobile and desktop extremes
+            side === 'left' ? "flex-row text-left w-[clamp(12rem,40vw,20rem)] md:flex-row-reverse md:text-right" :
+                side === 'right' ? "flex-row text-left w-[clamp(12rem,40vw,20rem)]" :
                     "flex-col text-center w-auto gap-2", // Center variant
             // Pause interactions if Login is Open or Navigating
             (isLoginOpen || navState !== 'idle') ? "pointer-events-none opacity-50 grayscale" : "hover:scale-105 pointer-events-auto"
@@ -56,7 +57,8 @@ function NavButton({ item, side, onClick, onEdit, isOwner }: {
             {/* Text Label */}
             <span className={clsx(
                 "text-primary-text font-bold tracking-widest transition-opacity duration-300 whitespace-nowrap",
-                "text-xs md:text-lg drop-shadow-[0_0_5px_var(--primary-glow)]",
+                // Fluid Text Size: 12px -> 20px range
+                "text-[clamp(0.75rem,2.5vw,1.25rem)] drop-shadow-[0_0_5px_var(--primary-glow)]",
                 side === 'center' && "order-2" // Text below icon for center
             )}>
                 {item.label}
@@ -64,12 +66,13 @@ function NavButton({ item, side, onClick, onEdit, isOwner }: {
 
             {/* Circle Button */}
             <div className={clsx(
-                "relative w-10 h-10 md:w-16 md:h-16 rounded-full border-2 border-primary bg-glass flex items-center justify-center",
+                // Fluid size for the circle: 40px -> 64px range
+                "relative w-[clamp(2.5rem,8vw,4rem)] h-[clamp(2.5rem,8vw,4rem)] rounded-full border-2 border-primary bg-glass flex items-center justify-center",
                 "shadow-[0_0_15px_var(--primary-glow)] group-hover:shadow-[0_0_25px_var(--primary-glow)]",
                 "group-hover:border-white transition-all duration-300",
                 side === 'center' && "order-1" // Icon above text
             )}>
-                <IconComponent className="w-5 h-5 md:w-8 md:h-8 text-primary-text group-hover:text-white transition-colors" />
+                <IconComponent className="w-[50%] h-[50%] text-primary-text group-hover:text-white transition-colors" />
 
                 {/* Edit Pencil Icon (Owner Only) */}
                 {isOwner && !isLoginOpen && (
