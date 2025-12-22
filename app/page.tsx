@@ -18,9 +18,7 @@ const RobotScene = dynamic(() => import('@/components/canvas/RobotScene'), {
 
 export default function Home() {
     const { theme } = useTheme();
-    // Get background from current theme, or fallback to default
-    const themeColors = themes[theme]?.colors;
-    const bgColor = themeColors?.background || "#1e1b4b"; // Fallback to Indigo-950
+    // Background is now handled by BackgroundManager layout component
 
     // Responsive State
     const [layoutMode, setLayoutMode] = useState<'mobile' | 'narrow' | 'wide'>('wide');
@@ -44,8 +42,7 @@ export default function Home() {
 
     return (
         <main
-            className="relative w-full h-screen min-h-[600px] overflow-hidden transition-colors duration-700"
-            style={{ backgroundColor: bgColor }}
+            className="relative w-full h-screen min-h-[600px] overflow-hidden"
         >
             <div className="absolute top-0 left-0 w-full h-full z-0">
                 <RobotScene layoutMode={layoutMode} />
