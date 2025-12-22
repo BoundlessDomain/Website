@@ -21,7 +21,7 @@ interface HeroHighlightsProps {
     onSelectHighlight?: (albumId: string, photoId: string) => void;
 }
 
-export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHighlightsProps) {
+export default function HeroHighlights({ highlights, albums, onSelectHighlight }: HeroHighlightsProps) {
     const isOwner = useUIStore((state) => state.isOwner);
     const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
 
