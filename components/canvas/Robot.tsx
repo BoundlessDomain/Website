@@ -56,7 +56,11 @@ const ZzzParticles = React.memo(function ZzzParticles() {
     );
 });
 
-export default function Robot() {
+interface RobotProps {
+    layoutMode?: 'mobile' | 'narrow' | 'wide';
+}
+
+export default function Robot({ layoutMode = 'wide' }: RobotProps) {
     const headRef = useRef<Group>(null);
     const leftShoulderRef = useRef<Group>(null);
     const leftElbowRef = useRef<Group>(null);
@@ -227,7 +231,15 @@ export default function Robot() {
         if (leftShoulderRef.current && leftElbowRef.current) {
             // OPTIMIZATION: If navState is idle and mouse is far, skip complex IK or just lerp to rest
             // We still run lerp to rest, but we skip the solveIK math if we know we are returning to 0
-            if (mouse.x < -0.1 || navState !== 'idle') {
+
+            // LOGIC SPLIT:
+            // Desktop (Wide/Narrow): Left arm tracks if mouse < -0.1
+            // Mobile: Both arms track if mouse.y > 0 (Top half where buttons are)
+            const isActive = layoutMode === 'mobile'
+                ? (mouse.y > 0 || Math.abs(mouse.x) > 0.1) // Mobile: Track if top half OR side interactions
+                : (mouse.x < -0.1);
+
+            if ((isActive && navState === 'idle') || navState !== 'idle') {
                 let ikTargetX = worldX;
                 let ikTargetY = worldY;
 
@@ -262,7 +274,15 @@ export default function Robot() {
         // --- RIGHT ARM IK ---
         if (rightShoulderRef.current && rightElbowRef.current) {
             // Activate if mouse is on right OR if animating
-            if (mouse.x > 0.1 || navState !== 'idle') {
+
+            // LOGIC SPLIT:
+            // Desktop: Right arm tracks if mouse > 0.1
+            // Mobile: Both arms track if mouse.y > 0
+            const isActive = layoutMode === 'mobile'
+                ? (mouse.y > 0 || Math.abs(mouse.x) > 0.1)
+                : (mouse.x > 0.1);
+
+            if ((isActive && navState === 'idle') || navState !== 'idle') {
                 let ikTargetX = worldX;
                 let ikTargetY = worldY;
 

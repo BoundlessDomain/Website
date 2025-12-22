@@ -32,49 +32,61 @@ const AVAILABLE_PAGES = [
     { label: "ABOUT", href: "/about", iconName: "User" },
 ];
 
-function NavButton({ item, side, onClick, onEdit, isOwner }: {
+function NavButton({ item, side, onClick, onEdit, isOwner, layoutMode }: {
     item: NavItemState,
     side: 'left' | 'right' | 'center',
     onClick: (e: React.MouseEvent) => void,
     onEdit: (e: React.MouseEvent) => void,
-    isOwner: boolean
+    isOwner: boolean,
+    layoutMode: 'mobile' | 'narrow' | 'wide'
 }) {
     const isLoginOpen = useUIStore((state) => state.isLoginOpen);
     const navState = useUIStore((state) => state.navState);
-
     const IconComponent = IconMap[item.iconName] || FileText;
+
+    // Narrow mode sizing adjustments
+    const widthClass = layoutMode === 'narrow'
+        ? "w-[min(14rem,30vw)]"
+        : "w-[clamp(12rem,40vw,20rem)]";
+
+    const textSizeClass = layoutMode === 'narrow'
+        ? "text-[min(1rem,2vw)]"
+        : "text-[clamp(0.75rem,2.5vw,1.25rem)]";
+
+    const circleSizeClass = layoutMode === 'narrow'
+        ? "w-[min(3rem,6vw)] h-[min(3rem,6vw)]"
+        : "w-[clamp(2.5rem,8vw,4rem)] h-[clamp(2.5rem,8vw,4rem)]";
 
     return (
         <a href={item.href} onClick={onClick} className={clsx(
             "group relative flex items-center justify-between gap-2 md:gap-4 p-1 md:p-2 transition-all duration-300",
-            // FLUID SIZING: Use clamp() for continuous resizing between mobile and desktop extremes
-            side === 'left' ? "flex-row text-left w-[clamp(12rem,40vw,20rem)] md:flex-row-reverse md:text-right" :
-                side === 'right' ? "flex-row text-left w-[clamp(12rem,40vw,20rem)]" :
+            // Layout specific sizing
+            side === 'left' ? `flex-row text-left ${widthClass} md:flex-row-reverse md:text-right` :
+                side === 'right' ? `flex-row text-left ${widthClass}` :
                     "flex-col text-center w-auto gap-2", // Center variant
-            // Pause interactions if Login is Open or Navigating
             (isLoginOpen || navState !== 'idle') ? "pointer-events-none opacity-50 grayscale" : "hover:scale-105 pointer-events-auto"
         )}>
             {/* Text Label */}
             <span className={clsx(
                 "text-primary-text font-bold tracking-widest transition-opacity duration-300 whitespace-nowrap",
-                // Fluid Text Size: 12px -> 20px range
-                "text-[clamp(0.75rem,2.5vw,1.25rem)] drop-shadow-[0_0_5px_var(--primary-glow)]",
-                side === 'center' && "order-2" // Text below icon for center
+                textSizeClass,
+                "drop-shadow-[0_0_5px_var(--primary-glow)]",
+                side === 'center' && "order-2"
             )}>
                 {item.label}
             </span>
 
             {/* Circle Button */}
             <div className={clsx(
-                // Fluid size for the circle: 40px -> 64px range
-                "relative w-[clamp(2.5rem,8vw,4rem)] h-[clamp(2.5rem,8vw,4rem)] rounded-full border-2 border-primary bg-glass flex items-center justify-center",
+                "relative rounded-full border-2 border-primary bg-glass flex items-center justify-center",
+                circleSizeClass,
                 "shadow-[0_0_15px_var(--primary-glow)] group-hover:shadow-[0_0_25px_var(--primary-glow)]",
                 "group-hover:border-white transition-all duration-300",
-                side === 'center' && "order-1" // Icon above text
+                side === 'center' && "order-1"
             )}>
                 <IconComponent className="w-[50%] h-[50%] text-primary-text group-hover:text-white transition-colors" />
 
-                {/* Edit Pencil Icon (Owner Only) */}
+                {/* Edit Pencil Icon */}
                 {isOwner && !isLoginOpen && (
                     <div
                         onClick={(e) => { e.stopPropagation(); e.preventDefault(); onEdit(e); }}
@@ -87,7 +99,7 @@ function NavButton({ item, side, onClick, onEdit, isOwner }: {
                 )}
             </div>
 
-            {/* Connecting Line (Decorative) - Moved to be "under" text */}
+            {/* Connecting Line */}
             {side !== 'center' && (
                 <div className={clsx(
                     "absolute bottom-0 w-8 md:w-12 h-[2px] bg-secondary-dark -z-10 group-hover:bg-primary transition-colors",
@@ -98,7 +110,11 @@ function NavButton({ item, side, onClick, onEdit, isOwner }: {
     );
 }
 
-export default function NavigationMenu() {
+interface NavigationMenuProps {
+    layoutMode?: 'mobile' | 'narrow' | 'wide';
+}
+
+export default function NavigationMenu({ layoutMode = 'wide' }: NavigationMenuProps) {
     const router = useRouter();
     const isLoginOpen = useUIStore((state) => state.isLoginOpen);
     const navState = useUIStore((state) => state.navState);
@@ -183,26 +199,45 @@ export default function NavigationMenu() {
         }
     }, [returningLabel, setNavState, setReturningLabel, leftItems, rightItems]);
 
+    // --- RENDER LOGIC for Layout Modes ---
+    // If Narrow: Pack left (justify-start gap-small)
+    // If Mobile: Pack top (justify-start pt-10 gap-small)
+    const containerClass = layoutMode === 'narrow'
+        ? "justify-center md:justify-start md:pl-10 md:gap-4" // Narrow: Pack Left
+        : layoutMode === 'mobile'
+            ? "justify-start pt-10 gap-4" // Mobile: Pack Top
+            : "justify-center md:justify-between px-4 md:px-20 pt-24 md:pt-0 gap-8 md:gap-0"; // Wide
+
+    // Reduce drift animation in Narrow mode to avoid hitting robot
+    const driftX = layoutMode === 'narrow' ? 2 : 5;
+    const driftDuration = layoutMode === 'narrow' ? 8 : 5; // Slower/subtle drift in narrow
+
     return (
-        <div className="absolute inset-0 z-40 pointer-events-none flex flex-col md:flex-row justify-center md:justify-between items-start md:items-center px-4 md:px-20 pt-24 md:pt-0 gap-8 md:gap-0">
+        <div className={clsx(
+            "absolute inset-0 z-40 pointer-events-none flex flex-col md:flex-row items-start md:items-center",
+            containerClass
+        )}>
             {/* Left Menu Items - Individual Floating Windows */}
-            <div className="flex flex-col gap-4 md:gap-6 items-start md:items-end">
+            <div className={clsx(
+                "flex flex-col gap-4 items-start",
+                layoutMode === 'mobile' ? "items-center w-full" : "md:items-end md:gap-6"
+            )}>
                 {leftItems.map((item, i) => (
                     <motion.div
                         key={i}
                         layoutId={`menu-item-${item.label}`}
                         className={clsx(
                             "p-3 md:p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
-                            i === 1 ? "md:mr-12" : "",
+                            (layoutMode === 'wide' && i === 1) ? "md:mr-12" : "", // Stagger only in wide
                             (activeItem?.label === item.label) ? "opacity-0" : "opacity-100"
                         )}
                         animate={(isLoginOpen || isLowPowerMode) ? {} : {
                             y: [0, -10, 0],
-                            x: [0, 5, 0]
+                            x: [0, driftX, 0]
                         }}
                         transition={{
                             repeat: Infinity,
-                            duration: 5 + i,
+                            duration: driftDuration + i,
                             ease: "easeInOut",
                             delay: i * 0.5
                         }}
@@ -213,29 +248,33 @@ export default function NavigationMenu() {
                             onClick={(e) => handleNavClick(e, item)}
                             onEdit={() => handleEditClick('left', i)}
                             isOwner={isOwner}
+                            layoutMode={layoutMode}
                         />
                     </motion.div>
                 ))}
             </div>
 
             {/* Right Menu Items - Individual Floating Windows */}
-            <div className="flex flex-col gap-4 md:gap-6 items-start">
+            <div className={clsx(
+                "flex flex-col gap-4 items-start",
+                layoutMode === 'mobile' ? "items-center w-full" : "md:gap-6"
+            )}>
                 {rightItems.map((item, i) => (
                     <motion.div
                         key={i}
                         layoutId={`menu-item-${item.label}`}
                         className={clsx(
                             "p-3 md:p-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto",
-                            i === 1 ? "md:ml-12" : "",
+                            (layoutMode === 'wide' && i === 1) ? "md:ml-12" : "", // Stagger only in wide
                             (activeItem?.label === item.label) ? "opacity-0" : "opacity-100"
                         )}
                         animate={(isLoginOpen || isLowPowerMode) ? {} : {
                             y: [0, -12, 0],
-                            x: [0, -5, 0]
+                            x: [0, -driftX, 0]
                         }}
                         transition={{
                             repeat: Infinity,
-                            duration: 6 + i,
+                            duration: driftDuration + 1 + i,
                             ease: "easeInOut",
                             delay: i * 0.7
                         }}
@@ -246,6 +285,7 @@ export default function NavigationMenu() {
                             onClick={(e) => handleNavClick(e, item)}
                             onEdit={() => handleEditClick('right', i)}
                             isOwner={isOwner}
+                            layoutMode={layoutMode}
                         />
                     </motion.div>
                 ))}
@@ -266,6 +306,7 @@ export default function NavigationMenu() {
                             // For now, we disable editing for this specific fixed button or we'd need a backend field
                             onEdit={() => console.log("Edit contacts not yet persisted")}
                             isOwner={false} // Disable edit pencil for now to avoid confusion until backend supports it
+                            layoutMode={layoutMode}
                         />
                     </motion.div>
                 </div>

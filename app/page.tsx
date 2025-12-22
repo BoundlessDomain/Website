@@ -22,10 +22,21 @@ export default function Home() {
     const themeColors = themes[theme]?.colors;
     const bgColor = themeColors?.background || "#1e1b4b"; // Fallback to Indigo-950
 
-    // Mobile detection for robot positioning
-    const [isMobile, setIsMobile] = useState(false);
+    // Responsive State
+    const [layoutMode, setLayoutMode] = useState<'mobile' | 'narrow' | 'wide'>('wide');
+
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        const handleResize = () => {
+            const width = window.innerWidth;
+            if (width < 768) {
+                setLayoutMode('mobile');
+            } else if (width <= 1200) {
+                setLayoutMode('narrow');
+            } else {
+                setLayoutMode('wide');
+            }
+        };
+
         handleResize(); // Init
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
@@ -33,13 +44,13 @@ export default function Home() {
 
     return (
         <main
-            className="relative w-full h-screen overflow-hidden transition-colors duration-700"
+            className="relative w-full h-screen min-h-[600px] overflow-hidden transition-colors duration-700"
             style={{ backgroundColor: bgColor }}
         >
             <div className="absolute top-0 left-0 w-full h-full z-0">
-                <RobotScene floorColor={bgColor} shiftRight={isMobile} />
+                <RobotScene layoutMode={layoutMode} />
             </div>
-            <NavigationMenu />
+            <NavigationMenu layoutMode={layoutMode} />
         </main>
     );
 }
