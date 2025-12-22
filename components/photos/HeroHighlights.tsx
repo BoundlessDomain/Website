@@ -68,6 +68,30 @@ export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHi
         setTimeout(() => setShuffling(false), 500);
     };
 
+    // Helper to get formatted date
+    const getAlbumDate = (albumId?: string) => {
+        if (!albumId || !albums) return null;
+        const album = albums.find(a => a.id === albumId);
+        if (!album?.date) return null;
+
+        try {
+            // Handle YYYY-MM-DD
+            if (album.date.includes('-') && album.date.length === 10) {
+                const [y, m, _] = album.date.split('-');
+                return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long'
+                });
+            }
+            return new Date(album.date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long'
+            });
+        } catch {
+            return null;
+        }
+    };
+
     if (!displayHighlights || displayHighlights.length === 0) return null;
 
     // Use specific indices to create a masonry-style or featured grid
