@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { FileText, Plus, Loader2, ArrowLeft } from "lucide-react";
+import { FileText, Plus, Loader2, ArrowLeft, Pencil } from "lucide-react";
 import Link from "next/link";
 import PageTransition from "@/components/ui/PageTransition";
 import ArticleCard from "@/components/articles/ArticleCard";
 import AddReviewItemModal from "@/components/articles/AddReviewItemModal";
+import AddArticleModal from "@/components/articles/AddArticleModal";
 import { useUIStore } from "@/store/uiStore";
 import { supabase } from "@/utils/supabase";
 
@@ -41,6 +42,11 @@ export default function ArticleDetailPage() {
     const [loading, setLoading] = useState(true);
     const [isAddOpen, setIsAddOpen] = useState(false);
 
+    // Edit State
+    const [editArticle, setEditArticle] = useState<Article | null>(null);
+    const [editReviewItem, setEditReviewItem] = useState<ReviewItem | null>(null);
+    const [isAddArticleOpen, setIsAddArticleOpen] = useState(false);
+
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -61,7 +67,7 @@ export default function ArticleDetailPage() {
                     .from('review_items')
                     .select('*')
                     .eq('article_id', id)
-                    .order('created_at', { ascending: false });
+                    .order('rating', { ascending: false });
 
                 if (itemsError) throw itemsError;
                 setReviewItems(itemsData || []);
@@ -101,93 +107,126 @@ export default function ArticleDetailPage() {
 
     return (
         <PageTransition icon={FileText} title="ARTICLE" quadrant="top-left">
-            <div className="space-y-12 pb-24 relative">
+            const [editArticle, setEditArticle] = useState<Article | null>(null);
+            const [editReviewItem, setEditReviewItem] = useState<ReviewItem | null>(null);
+            const [isAddArticleOpen, setIsAddArticleOpen] = useState(false); // For editing main article
 
-                {/* Back Button */}
-                <Link href="/articles" className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-4">
-                    <ArrowLeft size={20} />
-                    Back to Articles
-                </Link>
+            // Import AddArticleModal (Make sure to add import at top if missing)
+            import AddArticleModal from "@/components/articles/AddArticleModal";
 
-                {/* Article Header */}
-                <div className="space-y-6">
-                    {/* Cover Image */}
-                    {article.image_url && (
-                        <div className="w-full aspect-[21/9] rounded-2xl overflow-hidden bg-black/20 shadow-2xl border border-white/10">
-                            <img src={article.image_url} alt={article.title} className="w-full h-full object-cover" />
-                        </div>
-                    )}
+            // ... existing fetchData ...
 
-                    {/* Title & Meta */}
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
-                        <div>
-                            <span className="text-primary font-mono text-sm tracking-wider uppercase mb-2 block">
-                                {article.type === 'review_collection' ? 'Review Collection' : 'Article'}
-                            </span>
-                            <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{article.title}</h1>
-                            <span className="text-white/40">{article.date_display}</span>
-                        </div>
-                        {article.rating && (
-                            <div className="text-right">
-                                <span className="text-sm text-white/40 block">Rating</span>
-                                <span className="text-3xl font-bold text-primary">{article.rating}/10</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="prose prose-invert prose-lg max-w-none text-white/80 leading-relaxed whitespace-pre-wrap">
-                        {article.content}
-                    </div>
+            // ... render ...
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
+                {/* Title & Meta */}
+                <div>
+                    <span className="text-primary font-mono text-sm tracking-wider uppercase mb-2 block">
+                        {article.type === 'review_collection' ? 'Review Collection' : 'Article'}
+                    </span>
+                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{article.title}</h1>
+                    <span className="text-white/40">{article.date_display}</span>
                 </div>
-
-                {/* Review Items */}
-                {article.type === 'review_collection' && (
-                    <div className="space-y-8 mt-16 pt-8 border-t border-white/10">
-                        <h2 className="text-2xl font-bold text-white">Reviewed Items</h2>
-
-                        <div className="space-y-6">
-                            {reviewItems.length > 0 ? (
-                                reviewItems.map((item) => (
-                                    <ArticleCard
-                                        key={item.id}
-                                        title={item.name}
-                                        rating={item.rating}
-                                        date={item.date_display}
-                                        imageSrc={item.image_url}
-                                    >
-                                        <p className="whitespace-pre-wrap">{item.content}</p>
-                                    </ArticleCard>
-                                ))
-                            ) : (
-                                <p className="text-white/40 italic">No items reviewed yet.</p>
-                            )}
-                        </div>
-
-                        {/* Add Item Button */}
-                        {isOwner && (
-                            <div className="fixed bottom-8 right-8 z-50">
-                                <button
-                                    className="flex items-center gap-2 px-6 py-3 bg-primary text-black font-bold rounded-full 
-                                             shadow-[0_0_20px_var(--primary-glow)] hover:scale-105 active:scale-95 transition-all"
-                                    onClick={() => setIsAddOpen(true)}
-                                >
-                                    <Plus size={20} />
-                                    Add Review Item
-                                </button>
-                            </div>
-                        )}
+                {article.rating && (
+                    <div className="text-right">
+                        <span className="text-sm text-white/40 block">Rating</span>
+                        <span className="text-3xl font-bold text-primary">{article.rating.toFixed(1)}/10</span>
                     </div>
                 )}
-
-                {/* Add Modal */}
-                <AddReviewItemModal
-                    isOpen={isAddOpen}
-                    onClose={() => setIsAddOpen(false)}
-                    onSuccess={fetchData}
-                    articleId={article.id}
-                />
+                {/* Edit Button for Main Article */}
+                {isOwner && (
+                    <div className="absolute top-0 right-0">
+                        <button
+                            onClick={() => {
+                                setEditArticle(article);
+                                setIsAddArticleOpen(true);
+                            }}
+                            className="p-3 bg-red-500/80 hover:bg-red-500 text-white rounded-full shadow-lg transition-transform hover:scale-110"
+                            title="Edit Article"
+                        >
+                            <Pencil size={20} />
+                        </button>
+                    </div>
+                )}
             </div>
-        </PageTransition>
+
+            {/* ... Content ... */}
+
+            {/* Review Items */}
+            {article.type === 'review_collection' && (
+                <div className="space-y-8 mt-16 pt-8 border-t border-white/10">
+                    {/* ... Header ... */}
+                    <h2 className="text-2xl font-bold text-white">Reviewed Items</h2>
+
+                    <div className="space-y-6">
+                        {reviewItems.length > 0 ? (
+                            reviewItems.map((item) => (
+                                <ArticleCard
+                                    key={item.id}
+                                    title={item.name}
+                                    rating={item.rating}
+                                    date={item.date_display}
+                                    imageSrc={item.image_url}
+                                    onEdit={isOwner ? (e) => {
+                                        setEditReviewItem(item);
+                                        // We reuse the AddReviewItemModal but need a way to open it for editing
+                                        // Let's use a separate state or just re-purpose isAddOpen
+                                        setIsAddOpen(true);
+                                    } : undefined}
+                                >
+                                    <p className="whitespace-pre-wrap">{item.content}</p>
+                                </ArticleCard>
+                            ))
+                        ) : (
+                            <p className="text-white/40 italic">No items reviewed yet.</p>
+                        )}
+                    </div>
+
+                    {/* Add Item Button */}
+                    {isOwner && (
+                        <div className="fixed bottom-8 right-8 z-50">
+                            <button
+                                className="flex items-center gap-2 px-6 py-3 bg-primary text-black font-bold rounded-full 
+                                              shadow-[0_0_20px_var(--primary-glow)] hover:scale-105 active:scale-95 transition-all"
+                                onClick={() => {
+                                    setEditReviewItem(null); // Clear edit state for adding new
+                                    setIsAddOpen(true);
+                                }}
+                            >
+                                <Plus size={20} />
+                                Add Review Item
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Modals */}
+
+            {/* 1. Review Item Modal (Add/Edit) */}
+            <AddReviewItemModal
+                isOpen={isAddOpen}
+                onClose={() => {
+                    setIsAddOpen(false);
+                    setEditReviewItem(null);
+                }}
+                onSuccess={fetchData}
+                articleId={article.id}
+                initialData={editReviewItem}
+            />
+
+            {/* 2. Article Modal (Edit Main Article) */}
+            {isAddArticleOpen && (
+                <AddArticleModal
+                    isOpen={isAddArticleOpen}
+                    onClose={() => {
+                        setIsAddArticleOpen(false);
+                        setEditArticle(null);
+                    }}
+                    onSuccess={fetchData}
+                    initialData={editArticle}
+                />
+            )}
+        </div>
+        </PageTransition >
     );
 }

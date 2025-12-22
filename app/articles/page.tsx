@@ -53,14 +53,6 @@ export default function ArticlesPage() {
         <PageTransition icon={FileText} title="ARTICLES" quadrant="top-left">
             <div className="space-y-12 pb-24">
                 
-                {/* Intro Section */}
-                <section className="p-8 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                    <h2 className="text-3xl font-bold text-white mb-4">Welcome to the Archives</h2>
-                    <p className="text-white/80 text-lg leading-relaxed">
-                        Here is where I document my thoughts, reviews, and technical deep dives. 
-                        From testing everyday objects to exploring complex code patterns, this is a collection of my experiences.
-                    </p>
-                </section>
 
                 {/* Articles List */}
                 <div className="space-y-6 min-h-[200px]">

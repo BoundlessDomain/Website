@@ -10,12 +10,12 @@ interface AddReviewItemModalProps {
     onClose: () => void;
     onSuccess: () => void;
     articleId: string;
+    initialData?: any; // For editing
 }
 
-
-export default function AddReviewItemModal({ isOpen, onClose, onSuccess, articleId }: AddReviewItemModalProps) {
+export default function AddReviewItemModal({ isOpen, onClose, onSuccess, articleId, initialData }: AddReviewItemModalProps) {
     const [name, setName] = useState("");
-    const [rating, setRating] = useState<number>(5);
+    const [rating, setRating] = useState<number | ''>(5);
 
     // Date State
     const today = new Date();
@@ -28,6 +28,38 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Pre-fill / Reset Data
+    import { useEffect } from "react";
+    useEffect(() => {
+        if (isOpen) {
+            if (initialData) {
+                setName(initialData.name);
+                setRating(initialData.rating); // numeric 4.5 is fine here
+                setContent(initialData.content);
+                setImagePreview(initialData.image_url);
+
+                if (initialData.date_display) {
+                    const [d, m, y] = initialData.date_display.split('-');
+                    if (d && m && y) {
+                        setDay(d);
+                        setMonth(m);
+                        setYear(y);
+                    }
+                }
+            } else {
+                // Reset
+                setName("");
+                setRating(5);
+                setContent("");
+                setImageFile(null);
+                setImagePreview(null);
+                setDay(today.getDate().toString().padStart(2, '0'));
+                setMonth((today.getMonth() + 1).toString().padStart(2, '0'));
+                setYear(today.getFullYear().toString());
+            }
+        }
+    }, [isOpen, initialData]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -42,7 +74,7 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
         setLoading(true);
 
         try {
-            let imageUrl = null;
+            let imageUrl = initialData?.image_url || null;
             // Get Session
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) throw new Error("Not authenticated");
@@ -73,38 +105,43 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
             // 2. Format Date
             const dateDisplay = `${day}-${month}-${year}`;
 
-            // 3. Insert via API
-            const res = await fetch('/api/reviews', {
-                method: 'POST',
+            // 3. Insert or Update via API
+            const url = '/api/reviews';
+            const method = initialData ? 'PUT' : 'POST';
+
+            const payload: any = {
+                article_id: articleId,
+                name,
+                rating: rating === '' ? 0 : Number(rating),
+                content,
+                date_display: dateDisplay,
+                image_url: imageUrl
+            };
+
+            if (initialData) {
+                payload.id = initialData.id;
+            }
+
+            const res = await fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    article_id: articleId,
-                    name,
-                    rating,
-                    content,
-                    date_display: dateDisplay,
-                    image_url: imageUrl
-                })
+                body: JSON.stringify(payload)
             });
 
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.error || "Failed to create review item");
+                throw new Error(err.error || `Failed to ${initialData ? 'update' : 'create'} review item`);
             }
 
             // 3. Reset
-            setName("");
-            setContent("");
-            setImageFile(null);
-            setImagePreview(null);
             onSuccess();
             onClose();
 
         } catch (error: any) {
-            console.error("Error creating review item:", error);
+            console.error("Error creating/updating review item:", error);
             alert("Failed: " + error.message);
         } finally {
             setLoading(false);
@@ -127,7 +164,7 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
                         className="w-full max-w-2xl bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                     >
                         <div className="flex justify-between items-center p-6 border-b border-white/10 bg-white/5">
-                            <h2 className="text-xl font-bold text-white">Add Review Item</h2>
+                            <h2 className="text-xl font-bold text-white">{initialData ? "Edit Review Item" : "Add Review Item"}</h2>
                             <button onClick={onClose} className="text-white/50 hover:text-white transition-colors">
                                 <X size={24} />
                             </button>
@@ -153,10 +190,11 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
                                         <label className="block text-sm font-medium text-white/60 mb-1">Rating (1-10)</label>
                                         <input
                                             type="number"
-                                            min="1"
+                                            min="0"
                                             max="10"
+                                            step="0.1"
                                             value={rating}
-                                            onChange={(e) => setRating(parseInt(e.target.value))}
+                                            onChange={(e) => setRating(e.target.value)}
                                             className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
                                         />
                                     </div>
@@ -236,7 +274,7 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
                         <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
                             <button onClick={onClose} className="px-5 py-2.5 rounded-lg text-white/70 hover:text-white transition-all">Cancel</button>
                             <button onClick={handleSubmit} disabled={loading} className="px-6 py-2.5 rounded-lg bg-primary text-black font-bold hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
-                                {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> Add Item</>}
+                                {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> {initialData ? "Update Item" : "Add Item"}</>}
                             </button>
                         </div>
                     </motion.div>
