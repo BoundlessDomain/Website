@@ -94,7 +94,31 @@ export default function AlbumRow({ albums, onSelectAlbum, onAlbumCreate }: Album
                             )} />
 
                             <div className="absolute bottom-0 left-0 p-6 w-full">
-                                <p className="text-xs font-bold text-primary tracking-widest uppercase mb-1">{album.date}</p>
+                                <p className="text-xs font-bold text-primary tracking-widest uppercase mb-1">
+                                    {(() => {
+                                        if (!album.date) return '';
+                                        try {
+                                            // Handle YYYY-MM-DD
+                                            const date = new Date(album.date);
+
+                                            // If standard format
+                                            if (album.date.includes('-') && album.date.length === 10) {
+                                                const [y, m, _] = album.date.split('-');
+                                                return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long'
+                                                });
+                                            }
+                                            // Fallback
+                                            return date.toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'long'
+                                            });
+                                        } catch (e) {
+                                            return album.date;
+                                        }
+                                    })()}
+                                </p>
                                 <h3 className="text-2xl font-bold text-white leading-tight">{album.title}</h3>
                                 <p className="text-xs text-white/50 mt-2">{album.photos.length} Photos</p>
                             </div>

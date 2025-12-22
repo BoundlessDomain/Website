@@ -49,8 +49,6 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
 
     // Local state for inline editing
     const [title, setTitle] = useState(album?.title || "");
-    const [selectedMonth, setSelectedMonth] = useState("");
-    const [selectedYear, setSelectedYear] = useState("");
 
     // Delete State
     const [isDeleting, setIsDeleting] = useState(false);
@@ -67,46 +65,27 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
         setMounted(true);
     }, []);
 
-    // Sync state when album opens
     // Sync state when album opens/updates
     useEffect(() => {
         if (album) {
-            // Always update local state when prop updates (and on mount)
-            // We check equality to avoid loops if needed, but since album is a new object from parent, we sync.
-            // But to preserve dirty state we might want to be careful. 
-            // However, for this bug (mount init), we simply ensure we parse.
-
             if (!currentAlbum || currentAlbum.id !== album.id || currentAlbum.date !== album.date) {
-                setCurrentAlbum(album);
+                // Determine initial date format
+                // If it looks like "Month Year", convert to YYYY-MM-01 for the input
+                let dateStr = album.date || new Date().toISOString().split('T')[0];
+                if (!dateStr.includes('-')) {
+                    // Legacy format likely "January 2024"
+                    // Try to parse
+                    const d = new Date(dateStr);
+                    if (!isNaN(d.getTime())) {
+                        dateStr = d.toISOString().split('T')[0];
+                    } else {
+                        // Fallback
+                        dateStr = new Date().toISOString().split('T')[0];
+                    }
+                }
+
+                setCurrentAlbum({ ...album, date: dateStr });
                 setTitle(album.title);
-
-                // Parse Date
-                // Robust parsing for various formats (e.g. "January 2024", "Jan 2024", "2024-01")
-                const dateStr = album.date || "";
-                let foundMonth = "";
-                let foundYear = "";
-
-                // Check for Year (4 digits)
-                const yearMatch = dateStr.match(/\b(19|20)\d{2}\b/);
-                if (yearMatch) {
-                    foundYear = yearMatch[0];
-                } else {
-                    foundYear = currentYear.toString();
-                }
-
-                // Check for Month (Full or Short name)
-                const monthMatch = dateStr.match(/[a-zA-Z]+/);
-                if (monthMatch) {
-                    // Normalize month name
-                    const m = monthMatch[0];
-                    const normalized = MONTHS.find(mon => mon.toLowerCase().startsWith(m.toLowerCase()));
-                    if (normalized) foundMonth = normalized;
-                }
-
-                if (!foundMonth) foundMonth = MONTHS[new Date().getMonth()];
-
-                setSelectedMonth(foundMonth);
-                setSelectedYear(foundYear);
 
                 // PRELOAD IMAGES
                 album.photos.forEach(photo => {
@@ -136,9 +115,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
 
     if (!currentAlbum) return null;
 
-    const saveChanges = async (newTitle: string, newCover: string, newMonth: string, newYear: string) => {
-        const newDate = `${newMonth} ${newYear}`;
-
+    const saveChanges = async (newTitle: string, newCover: string, newDate: string) => {
         // Optimistic Update
         setCurrentAlbum(prev => prev ? ({ ...prev, title: newTitle, coverUrl: newCover, date: newDate }) : null);
 
@@ -156,7 +133,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
 
     const handleUpdate = () => {
         // Wrapper for onBlur using current state
-        saveChanges(title, currentAlbum.coverUrl, selectedMonth, selectedYear);
+        saveChanges(title, currentAlbum.coverUrl, currentAlbum.date);
     };
 
     const handleEditCover = async () => {
@@ -166,7 +143,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
     const handlePhotoClick = async (photo: Photo) => {
         if (isSelectingCover) {
             setIsSelectingCover(false);
-            saveChanges(title, photo.url, selectedMonth, selectedYear);
+            saveChanges(title, photo.url, currentAlbum.date);
         } else {
             // Future lightbox logic
         }
@@ -427,32 +404,43 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                         <span className="flex items-center gap-2">
                                             <Calendar size={14} />
                                             {mounted && isOwner ? (
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex bg-black rounded items-center">
+                                                    {/* Month */}
                                                     <select
-                                                        value={selectedMonth}
+                                                        value={currentAlbum.date.split('-')[1] || "01"}
                                                         onChange={(e) => {
-                                                            const newMonth = e.target.value;
-                                                            setSelectedMonth(newMonth);
-                                                            saveChanges(title, currentAlbum.coverUrl, newMonth, selectedYear);
+                                                            const [y, _, __] = (currentAlbum.date || new Date().toISOString().split('T')[0]).split('-');
+                                                            // Always default to 01 for day to avoid invalid dates (e.g. Feb 31) and simplify
+                                                            const newDate = `${y}-${e.target.value}-01`;
+                                                            saveChanges(title, currentAlbum.coverUrl, newDate);
                                                         }}
-                                                        className="bg-transparent border-b border-white/10 focus:border-primary outline-none text-white cursor-pointer hover:text-primary transition-colors appearance-none py-0.5"
+                                                        className="bg-transparent text-white text-sm px-1 py-0.5 outline-none appearance-none cursor-pointer hover:text-primary transition-colors text-center w-[120px]"
                                                     >
-                                                        {MONTHS.map(m => <option key={m} value={m} className="bg-black text-white">{m}</option>)}
+                                                        {Array.from({ length: 12 }, (_, i) => {
+                                                            const m = (i + 1).toString().padStart(2, '0');
+                                                            const label = new Date(2000, i, 1).toLocaleString('default', { month: 'long' });
+                                                            return <option key={m} value={m} className="bg-black">{label}</option>;
+                                                        })}
                                                     </select>
-                                                    <select
-                                                        value={selectedYear}
+                                                    <span className="text-white/30 text-xs mx-0.5">/</span>
+
+                                                    {/* Year */}
+                                                    <input
+                                                        type="number"
+                                                        value={currentAlbum.date.split('-')[0] || new Date().getFullYear().toString()}
                                                         onChange={(e) => {
-                                                            const newYear = e.target.value;
-                                                            setSelectedYear(newYear);
-                                                            saveChanges(title, currentAlbum.coverUrl, selectedMonth, newYear);
+                                                            const [_, m, __] = (currentAlbum.date || new Date().toISOString().split('T')[0]).split('-');
+                                                            const newDate = `${e.target.value}-${m}-01`;
+                                                            saveChanges(title, currentAlbum.coverUrl, newDate);
                                                         }}
-                                                        className="bg-transparent border-b border-white/10 focus:border-primary outline-none text-white cursor-pointer hover:text-primary transition-colors appearance-none py-0.5"
-                                                    >
-                                                        {YEARS.map(y => <option key={y} value={y} className="bg-black text-white">{y}</option>)}
-                                                    </select>
+                                                        className="bg-transparent text-white text-sm px-1 py-0.5 outline-none w-14 hover:text-primary transition-colors text-left"
+                                                        placeholder="YYYY"
+                                                    />
                                                 </div>
                                             ) : (
-                                                `${selectedMonth} ${selectedYear}`
+                                                <span className="text-base text-primary">
+                                                    {new Date(currentAlbum.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                </span>
                                             )}
                                         </span>
                                         <span className="flex items-center gap-1"><ImageIcon size={14} /> {currentAlbum.photos.length} Photos</span>

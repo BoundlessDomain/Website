@@ -24,6 +24,15 @@ export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHi
     const isOwner = useUIStore((state) => state.isOwner);
     const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
 
+    // Local state for shuffling
+    const [displayHighlights, setDisplayHighlights] = useState<Highlight[]>([]);
+
+    useEffect(() => {
+        if (highlights) {
+            setDisplayHighlights(highlights);
+        }
+    }, [highlights]);
+
     // Auto-rotate highlights every 5s
     const [currentIndex, setCurrentIndex] = useState(0);
     const [shuffling, setShuffling] = useState(false);
@@ -34,31 +43,35 @@ export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHi
     }, []);
 
     useEffect(() => {
-        if (highlights.length <= 1) return;
+        if (displayHighlights.length <= 1) return;
         const interval = setInterval(() => {
-            setCurrentIndex((prev) => (prev + 1) % highlights.length);
+            setCurrentIndex((prev) => (prev + 1) % displayHighlights.length);
         }, 5000);
         return () => clearInterval(interval);
-    }, [highlights.length]);
+    }, [displayHighlights.length]);
 
-    const handleShuffle = async () => {
+    const handleShuffle = () => {
         setShuffling(true);
-        try {
-            // Note: This endpoint was removed in favor of daily seeds, but keeping button for potential future use or manual re-seed
-            // For now, we just reload the page to get a "fresh" random sort if the seed changed (which it only does daily).
-            // So really this button is a "Reload" button now.
-            window.location.reload();
-        } catch (e) {
-            console.error(e);
+
+        // Simple Fisher-Yates shuffle
+        const shuffled = [...displayHighlights];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
-        setShuffling(false);
+
+        setDisplayHighlights(shuffled);
+        setCurrentIndex(0); // Reset rotation to start fresh
+
+        // Small delay to show the animation
+        setTimeout(() => setShuffling(false), 500);
     };
 
-    if (!highlights || highlights.length === 0) return null;
+    if (!displayHighlights || displayHighlights.length === 0) return null;
 
     // Use specific indices to create a masonry-style or featured grid
-    const mainHighlight = highlights[0];
-    const secondaryHighlights = highlights.slice(1, 3);
+    const mainHighlight = displayHighlights[0];
+    const secondaryHighlights = displayHighlights.slice(1, 3);
 
     return (
         <div className="w-full mb-24 md:mb-12 relative group/section">
@@ -66,12 +79,12 @@ export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHi
                 <h2 className="text-2xl font-bold text-white tracking-widest">
                     HIGHLIGHTS
                 </h2>
-                {mounted && isOwner && (
+                {mounted && (
                     <button
                         onClick={handleShuffle}
                         disabled={shuffling}
                         className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all disabled:opacity-50"
-                        title="Reload Highlights"
+                        title="Shuffle Highlights"
                     >
                         <RefreshCw size={20} className={shuffling ? "animate-spin" : ""} />
                     </button>
