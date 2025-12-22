@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/context/ThemeContext";
 import TopBar from "@/components/ui/TopBar";
 import DevTitleHandler from "@/components/ui/DevTitleHandler";
+import BackgroundManager from "@/components/themes/BackgroundManager";
 
 export const metadata: Metadata = {
     title: "BobbyYu Website",
@@ -20,6 +21,7 @@ export default function RootLayout({
         <html lang="en" suppressHydrationWarning>
             <body className="antialiased font-sans">
                 <ThemeProvider>
+                    <BackgroundManager />
                     <DevTitleHandler />
                     <TopBar />
                     {children}
