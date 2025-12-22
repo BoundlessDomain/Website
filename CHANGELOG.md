@@ -1,5 +1,12 @@
 # Changelog
 
+## V3.4.0 - Gallery & Layout Enhancements
+- **Feature:** Improved **Album Display** with masonry-like dynamic height scaling to prevent cropping.
+- **Feature:** Updated **Gallery UI** with 4-column grid and dynamic section spacing.
+- **Feature:** Added dates to featured highlight photos.
+- **Fix:** Fixed layout gaps between highlights and albums.
+- **Fix:** Adjusted homepage layouts for better responsiveness (green Matrix theme, robot positioning).
+
 ## V3.3.0 - Homepage UI & Mobile Grid
 - **Feature:** Implemented **Mobile Grid Layout** for navigation buttons on small screens (<768px).
 - **Feature:** Added **Matrix Theme** Green background update.
