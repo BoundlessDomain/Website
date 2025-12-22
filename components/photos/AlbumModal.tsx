@@ -61,6 +61,10 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
 
+    // Pagination / Infinite Scroll State
+    const [visibleCount, setVisibleCount] = useState(20);
+    const LOAD_INCREMENT = 20;
+
     useEffect(() => {
         setMounted(true);
     }, []);
@@ -70,25 +74,22 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
         if (album) {
             if (!currentAlbum || currentAlbum.id !== album.id || currentAlbum.date !== album.date) {
                 // Determine initial date format
-                // If it looks like "Month Year", convert to YYYY-MM-01 for the input
                 let dateStr = album.date || new Date().toISOString().split('T')[0];
                 if (!dateStr.includes('-')) {
-                    // Legacy format likely "January 2024"
-                    // Try to parse
                     const d = new Date(dateStr);
                     if (!isNaN(d.getTime())) {
                         dateStr = d.toISOString().split('T')[0];
                     } else {
-                        // Fallback
                         dateStr = new Date().toISOString().split('T')[0];
                     }
                 }
 
                 setCurrentAlbum({ ...album, date: dateStr });
                 setTitle(album.title);
+                setVisibleCount(20); // Reset on new album
 
-                // PRELOAD IMAGES
-                album.photos.forEach(photo => {
+                // PRELOAD IMAGES (Only for first few to save bandwidth/lag)
+                album.photos.slice(0, 20).forEach(photo => {
                     if (photo.type !== "video") {
                         const img = new Image();
                         img.src = `${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`;
@@ -96,33 +97,42 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                 });
             }
         }
-    }, [album]); // Remove currentAlbum dependency to avoid loops, just react to prop prop changes
+    }, [album]);
 
-    // Scroll to initial photo
+    // Scroll to initial photo logic with "Expand to find"
     useEffect(() => {
         if (initialPhotoId && mounted && currentAlbum) {
-            // Retry mechanism to ensure element is found
-            let attempts = 0;
-            const maxAttempts = 10;
+            const photoIndex = currentAlbum.photos.findIndex(p => p.id === initialPhotoId);
 
-            const attemptScroll = () => {
-                const element = document.getElementById(`photo-${initialPhotoId}`);
-                if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-                    // Add a temporary highlight
-                    element.classList.add('ring-4', 'ring-primary');
-                    // Longer duration (3s) so user sees it
-                    setTimeout(() => element.classList.remove('ring-4', 'ring-primary'), 3000);
-                } else if (attempts < maxAttempts) {
-                    attempts++;
-                    setTimeout(attemptScroll, 200); // Retry every 200ms
+            if (photoIndex !== -1) {
+                // If photo is outside current visible range, expand range!
+                if (photoIndex >= visibleCount) {
+                    setVisibleCount(photoIndex + 20);
                 }
-            };
 
-            // Start attempting after a short delay to allow layout to settle
-            setTimeout(attemptScroll, 300);
+                // Retry mechanism to ensure element is found and rendered
+                let attempts = 0;
+                const maxAttempts = 15;
+
+                const attemptScroll = () => {
+                    const element = document.getElementById(`photo-${initialPhotoId}`);
+                    if (element) {
+                        // Use 'center' block to avoid "overscroll" feeling (jamming to top)
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                        // Add a temporary highlight
+                        element.classList.add('ring-4', 'ring-primary');
+                        setTimeout(() => element.classList.remove('ring-4', 'ring-primary'), 3000);
+                    } else if (attempts < maxAttempts) {
+                        attempts++;
+                        setTimeout(attemptScroll, 100);
+                    }
+                };
+
+                // Allow React to render the expanded list first
+                setTimeout(attemptScroll, 100);
+            }
         }
-    }, [initialPhotoId, mounted, currentAlbum]); // Added currentAlbum dependency/check
+    }, [initialPhotoId, mounted, currentAlbum?.id]); // Only re-run if album or ID changes
 
     if (!currentAlbum) return null;
 
@@ -336,7 +346,14 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
     };
 
 
-
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+        if (scrollHeight - scrollTop <= clientHeight + 300) {
+            if (visibleCount < currentAlbum.photos.length) {
+                setVisibleCount(prev => Math.min(prev + LOAD_INCREMENT, currentAlbum.photos.length));
+            }
+        }
+    };
 
     return (
         <motion.div
@@ -486,7 +503,11 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                 </div>
 
                 {/* Masonry Grid with 4 Columns and Variable Height */}
-                <div className="flex-1 overflow-y-auto p-6 scroll-smooth" id="album-scroll-container">
+                <div
+                    className="flex-1 overflow-y-auto p-6 scroll-smooth"
+                    id="album-scroll-container"
+                    onScroll={handleScroll}
+                >
                     <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 pb-20">
                         {mounted && isOwner && !isSelectingCover && (
                             isUploading ? (
@@ -524,7 +545,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                 </label>
                             )
                         )}
-                        {currentAlbum.photos.map((photo, i) => (
+                        {currentAlbum.photos.slice(0, visibleCount).map((photo, i) => (
                             <motion.div
                                 key={photo.id}
                                 id={`photo-${photo.id}`}
@@ -579,6 +600,11 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                             </motion.div>
                         ))}
                     </div>
+                    {visibleCount < currentAlbum.photos.length && (
+                        <div className="py-8 flex justify-center text-white/30 text-xs uppercase tracking-widest">
+                            Loading more...
+                        </div>
+                    )}
                 </div>
             </motion.div >
         </motion.div >

@@ -54,17 +54,47 @@ export default function HeroHighlights({ highlights, albums, onSelectHighlight }
     const handleShuffle = () => {
         setShuffling(true);
 
-        // Simple Fisher-Yates shuffle
-        const shuffled = [...displayHighlights];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        // 1. Gather ALL photos from ALL albums
+        if (albums && albums.length > 0) {
+            const allPhotos: Highlight[] = [];
+            albums.forEach(album => {
+                if (album.photos) {
+                    album.photos.forEach((photo: any) => {
+                        allPhotos.push({
+                            id: photo.id,
+                            url: photo.url,
+                            type: photo.type,
+                            // Use Album Title as caption since raw photos don't have captions
+                            caption: album.title,
+                            albumId: album.id
+                        });
+                    });
+                }
+            });
+
+            // 2. Pick 3 random unique photos
+            // Simple shuffle of the massive array might be expensive if thousands of photos, 
+            // but typical user gallery is fine.
+            for (let i = allPhotos.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allPhotos[i], allPhotos[j]] = [allPhotos[j], allPhotos[i]];
+            }
+
+            // Take top 3
+            const newHighlights = allPhotos.slice(0, 3);
+            setDisplayHighlights(newHighlights);
+        } else {
+            // Fallback to existing logic if no albums data
+            const shuffled = [...displayHighlights];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            setDisplayHighlights(shuffled);
         }
 
-        setDisplayHighlights(shuffled);
-        setCurrentIndex(0); // Reset rotation to start fresh
+        setCurrentIndex(0);
 
-        // Small delay to show the animation
         setTimeout(() => setShuffling(false), 500);
     };
 
@@ -99,12 +129,12 @@ export default function HeroHighlights({ highlights, albums, onSelectHighlight }
     const secondaryHighlights = displayHighlights.slice(1, 3);
 
     return (
-        <div className="w-full mb-12 relative group/section">
+        <div className="w-full mb-8 relative group/section">
             <div className="flex items-center justify-between border-b border-white/10 mb-6 pb-2">
                 <h2 className="text-2xl font-bold text-white tracking-widest">
                     HIGHLIGHTS
                 </h2>
-                {mounted && (
+                {mounted && isOwner && (
                     <button
                         onClick={handleShuffle}
                         disabled={shuffling}
@@ -118,8 +148,9 @@ export default function HeroHighlights({ highlights, albums, onSelectHighlight }
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-auto md:h-[500px]">
                 {/* Main Feature (Left, 2/3 width on desktop) */}
+                {/* key={currentIndex} removed to prevent flashing on tab focus / rotation */}
                 <motion.div
-                    key={currentIndex} // Animate when index changes
+                    // key={currentIndex} 
                     initial={isLowPowerMode ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={isLowPowerMode ? { duration: 0 } : { duration: 0.8 }}
