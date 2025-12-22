@@ -19,7 +19,8 @@ const RobotScene = dynamic(() => import('@/components/canvas/RobotScene'), {
 export default function Home() {
     const { theme } = useTheme();
     // Get background from current theme, or fallback to default
-    const bgColor = themes[theme]?.colors.background || "#0f172a";
+    const themeColors = themes[theme]?.colors;
+    const bgColor = themeColors?.background || "#1e1b4b"; // Fallback to Indigo-950
 
     // Mobile detection for robot positioning
     const [isMobile, setIsMobile] = useState(false);
