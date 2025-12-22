@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { FileText, Plus, Loader2 } from "lucide-react";
 import PageTransition from "@/components/ui/PageTransition";
 import ArticleCard from "@/components/articles/ArticleCard";
@@ -11,13 +12,15 @@ import { supabase } from "@/utils/supabase";
 interface Article {
     id: string;
     title: string;
-    rating: number;
+    rating?: number;
     date_display: string;
     content: string;
     image_url?: string;
+    type?: 'standard' | 'review_collection';
 }
 
 export default function ArticlesPage() {
+    const router = useRouter();
     const isOwner = useUIStore((state) => state.isOwner);
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(true);
@@ -68,12 +71,12 @@ export default function ArticlesPage() {
                             <ArticleCard
                                 key={article.id}
                                 title={article.title}
-                                rating={article.rating}
+                                rating={article.rating || 0}
                                 date={article.date_display}
                                 imageSrc={article.image_url}
-                                onClick={() => console.log("Open Article:", article.title)}
+                                onClick={() => router.push(`/articles/${article.id}`)}
                             >
-                                <p className="whitespace-pre-wrap">{article.content}</p>
+                                <p className="whitespace-pre-wrap line-clamp-3">{article.content}</p>
                             </ArticleCard>
                         ))
                     ) : (

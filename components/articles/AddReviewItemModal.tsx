@@ -5,15 +5,16 @@ import { X, Upload, Loader2, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/utils/supabase";
 
-interface AddArticleModalProps {
+interface AddReviewItemModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    articleId: string;
 }
 
-export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArticleModalProps) {
-    const [title, setTitle] = useState("");
-    const [rating, setRating] = useState<number>(8);
+export default function AddReviewItemModal({ isOpen, onClose, onSuccess, articleId }: AddReviewItemModalProps) {
+    const [name, setName] = useState("");
+    const [rating, setRating] = useState<number>(5);
     const [dateDisplay, setDateDisplay] = useState(new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
     const [content, setContent] = useState("");
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -36,17 +37,16 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
         try {
             let imageUrl = null;
 
-            // 1. Upload Image if exists
+            // 1. Upload Image (Same bucket for now, simpler)
             if (imageFile) {
                 const fileExt = imageFile.name.split('.').pop();
-                const fileName = `${Date.now()}.${fileExt}`;
+                const fileName = `item-${Date.now()}.${fileExt}`;
                 const { error: uploadError, data } = await supabase.storage
                     .from('article-images')
                     .upload(fileName, imageFile);
 
                 if (uploadError) throw uploadError;
 
-                // Get Public URL
                 const { data: { publicUrl } } = supabase.storage
                     .from('article-images')
                     .getPublicUrl(fileName);
@@ -54,11 +54,12 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
                 imageUrl = publicUrl;
             }
 
-            // 2. Insert Record
+            // 2. Insert Review Item
             const { error: insertError } = await supabase
-                .from('articles')
+                .from('review_items')
                 .insert({
-                    title,
+                    article_id: articleId,
+                    name,
                     rating,
                     content,
                     date_display: dateDisplay,
@@ -67,8 +68,8 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
 
             if (insertError) throw insertError;
 
-            // 3. Reset and Close
-            setTitle("");
+            // 3. Reset
+            setName("");
             setContent("");
             setImageFile(null);
             setImagePreview(null);
@@ -76,8 +77,8 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
             onClose();
 
         } catch (error: any) {
-            console.error("Error creating article:", error);
-            alert("Failed to create article: " + error.message);
+            console.error("Error creating review item:", error);
+            alert("Failed: " + error.message);
         } finally {
             setLoading(false);
         }
@@ -98,60 +99,42 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
                         exit={{ scale: 0.95, opacity: 0 }}
                         className="w-full max-w-2xl bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                     >
-                        {/* Header */}
                         <div className="flex justify-between items-center p-6 border-b border-white/10 bg-white/5">
-                            <h2 className="text-xl font-bold text-white">Add New Article</h2>
+                            <h2 className="text-xl font-bold text-white">Add Review Item</h2>
                             <button onClick={onClose} className="text-white/50 hover:text-white transition-colors">
                                 <X size={24} />
                             </button>
                         </div>
 
-                        {/* Form */}
                         <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/20">
                             <form onSubmit={handleSubmit} className="space-y-6">
-                                {/* Title */}
+                                {/* Name */}
                                 <div>
-                                    <label className="block text-sm font-medium text-white/60 mb-1">Title</label>
+                                    <label className="block text-sm font-medium text-white/60 mb-1">Item Name</label>
                                     <input
                                         type="text"
                                         required
-                                        value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
                                         className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
-                                        placeholder="e.g. Bottled Water Review"
+                                        placeholder="e.g. Fiji Water"
                                     />
-                                    {/* Type Selection */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-white/60 mb-1">Format</label>
-                                        <select
-                                            value={type}
-                                            onChange={(e) => setType(e.target.value as any)}
-                                            className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors appearance-none"
-                                        >
-                                            <option value="standard">Standard Article</option>
-                                            <option value="review_collection">Review Collection (e.g. Water Rating)</option>
-                                        </select>
-                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    {/* Rating - Only for Standard */}
-                                    {type === 'standard' && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-white/60 mb-1">Rating (1-10)</label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                max="10"
-                                                value={rating}
-                                                onChange={(e) => setRating(parseInt(e.target.value))}
-                                                className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
-                                            />
-                                        </div>
-                                    )}
-                                    {/* Date */}
-                                    <div className={type !== 'standard' ? "col-span-2" : ""}>
-                                        <label className="block text-sm font-medium text-white/60 mb-1">Date Display</label>
+                                    <div>
+                                        <label className="block text-sm font-medium text-white/60 mb-1">Rating (1-10)</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="10"
+                                            value={rating}
+                                            onChange={(e) => setRating(parseInt(e.target.value))}
+                                            className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-white/60 mb-1">Date</label>
                                         <input
                                             type="text"
                                             value={dateDisplay}
@@ -161,37 +144,30 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
                                     </div>
                                 </div>
 
-                                {/* Content */}
                                 <div>
-                                    <label className="block text-sm font-medium text-white/60 mb-1">Content</label>
+                                    <label className="block text-sm font-medium text-white/60 mb-1">Review</label>
                                     <textarea
                                         required
-                                        rows={6}
+                                        rows={4}
                                         value={content}
                                         onChange={(e) => setContent(e.target.value)}
                                         className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors resize-none"
-                                        placeholder="Write your review here..."
+                                        placeholder="Review text..."
                                     />
                                 </div>
 
-                                {/* Image Upload */}
                                 <div>
-                                    <label className="block text-sm font-medium text-white/60 mb-2">Cover Image</label>
+                                    <label className="block text-sm font-medium text-white/60 mb-2">Image</label>
                                     <div
                                         onClick={() => fileInputRef.current?.click()}
                                         className="relative w-full aspect-video rounded-xl border-2 border-dashed border-white/10 hover:border-primary/50 transition-colors flex flex-col items-center justify-center cursor-pointer overflow-hidden bg-black/20 group"
                                     >
                                         {imagePreview ? (
-                                            <>
-                                                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <span className="text-white font-medium">Change Image</span>
-                                                </div>
-                                            </>
+                                            <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                                         ) : (
                                             <div className="flex flex-col items-center text-white/40">
-                                                <Upload size={32} className="mb-2" />
-                                                <span className="text-sm">Click to upload cover image</span>
+                                                <Upload size={24} className="mb-2" />
+                                                <span className="text-sm">Upload Image</span>
                                             </div>
                                         )}
                                         <input
@@ -206,30 +182,10 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
                             </form>
                         </div>
 
-                        {/* Footer */}
                         <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
-                            <button
-                                onClick={onClose}
-                                className="px-5 py-2.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all font-medium"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSubmit}
-                                disabled={loading}
-                                className="px-6 py-2.5 rounded-lg bg-primary text-black font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {loading ? (
-                                    <>
-                                        <Loader2 size={18} className="animate-spin" />
-                                        Saving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save size={18} />
-                                        Publish Article
-                                    </>
-                                )}
+                            <button onClick={onClose} className="px-5 py-2.5 rounded-lg text-white/70 hover:text-white transition-all">Cancel</button>
+                            <button onClick={handleSubmit} disabled={loading} className="px-6 py-2.5 rounded-lg bg-primary text-black font-bold hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+                                {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> Add Item</>}
                             </button>
                         </div>
                     </motion.div>
