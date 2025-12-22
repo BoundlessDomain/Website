@@ -15,7 +15,9 @@ export default function CyberpunkBackground() {
         setBuildings(Array.from({ length: 40 }, () => Math.random() * 40 + 10));
     }, []);
 
-    if (isLowPowerMode) return null;
+    if (isLowPowerMode) {
+        return <div className="fixed inset-0 z-[-1] bg-[var(--background)]" />;
+    }
 
     return (
         <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-[#1e1b4b]">

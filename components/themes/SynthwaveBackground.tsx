@@ -5,7 +5,9 @@ import { useUIStore } from "@/store/uiStore";
 export default function SynthwaveBackground() {
     const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
 
-    if (isLowPowerMode) return null;
+    if (isLowPowerMode) {
+        return <div className="fixed inset-0 z-[-1] bg-[var(--background)]" />;
+    }
 
     return (
         <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-[#2e1065]">

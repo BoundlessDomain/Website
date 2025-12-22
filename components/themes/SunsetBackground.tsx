@@ -6,7 +6,9 @@ import { motion } from "framer-motion";
 export default function SunsetBackground() {
     const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
 
-    if (isLowPowerMode) return null;
+    if (isLowPowerMode) {
+        return <div className="fixed inset-0 z-[-1] bg-[var(--background)]" />;
+    }
 
     return (
         <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-[#451a03]">
@@ -26,24 +28,21 @@ export default function SunsetBackground() {
                 <motion.div
                     animate={{ x: ["-25%", "0%"] }}
                     transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                    className="absolute -top-10 left-0 w-[200%] h-32 bg-[#0ea5e9]/40 rounded-[50%]"
-                    style={{ borderRadius: "50% 50% 0 0 / 100% 100% 0 0" }}
+                    className="absolute -top-10 left-0 w-[200%] h-32 bg-[#0ea5e9]/40 rounded-[50%_50%_0_0_/_100%_100%_0_0]"
                 />
 
                 {/* Middle Wave */}
                 <motion.div
                     animate={{ x: ["0%", "-25%"] }}
                     transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute -top-6 left-0 w-[200%] h-32 bg-[#0284c7]/60 rounded-[50%]"
-                    style={{ borderRadius: "50% 50% 0 0 / 100% 100% 0 0" }}
+                    className="absolute -top-6 left-0 w-[200%] h-32 bg-[#0284c7]/60 rounded-[50%_50%_0_0_/_100%_100%_0_0]"
                 />
 
                 {/* Front Wave */}
                 <motion.div
                     animate={{ x: ["-20%", "0%"] }}
                     transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute -top-2 left-0 w-[200%] h-32 bg-[#0369a1] rounded-[50%]"
-                    style={{ borderRadius: "50% 50% 0 0 / 100% 100% 0 0" }}
+                    className="absolute -top-2 left-0 w-[200%] h-32 bg-[#0369a1] rounded-[50%_50%_0_0_/_100%_100%_0_0]"
                 />
             </div>
 

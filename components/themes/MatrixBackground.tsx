@@ -70,7 +70,9 @@ export default function MatrixBackground() {
         };
     }, [isLowPowerMode]);
 
-    if (isLowPowerMode) return null;
+    if (isLowPowerMode) {
+        return <div className="fixed inset-0 z-[-1] bg-[var(--background)]" />;
+    }
 
     return (
         <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-black">

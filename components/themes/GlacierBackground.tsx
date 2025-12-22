@@ -75,7 +75,9 @@ export default function GlacierBackground() {
         };
     }, [isLowPowerMode]);
 
-    if (isLowPowerMode) return null;
+    if (isLowPowerMode) {
+        return <div className="fixed inset-0 z-[-1] bg-[var(--background)]" />;
+    }
 
     return (
         <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-[#0f172a]">
