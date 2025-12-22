@@ -502,128 +502,25 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                     )}
                 </div>
 
-                {/* Grid with 4 Columns (Row Ordered) */}
+                {/* Masonry Grid with 2-4 Columns (Row Ordered via Columns) */}
                 <div
                     className="flex-1 overflow-y-auto p-6 scroll-smooth"
                     id="album-scroll-container"
                     onScroll={handleScroll}
                 >
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-20 items-start align-top">
-                        {mounted && isOwner && !isSelectingCover && (
-                            isUploading ? (
-                                <div className="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 p-4">
-                                    <div className="flex flex-col items-center justify-center gap-3 w-full px-2">
-                                        <div className="p-3 rounded-full bg-white/10 text-white">
-                                            <UploadCloud size={24} className="animate-bounce" />
-                                        </div>
-                                        <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                                            <div
-                                                className="bg-primary h-full transition-all duration-300"
-                                                style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
-                                            />
-                                        </div>
-                                        <span className="text-xs font-bold text-white/50 tracking-wider">
-                                            {uploadProgress.current}/{uploadProgress.total}
-                                        </span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <label
-                                    className="aspect-square block w-full rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-colors group cursor-pointer p-4"
-                                >
-                                    <div className="p-3 rounded-full bg-primary/20 text-primary group-hover:scale-110 transition-transform">
-                                        <UploadCloud size={24} />
-                                    </div>
-                                    <span className="text-sm font-bold text-white/50">ADD MEDIA</span>
-                                    <input
-                                        type="file"
-                                        className="hidden"
-                                        onChange={handleFileUpload}
-                                        accept="image/png, image/jpeg, image/webp, image/gif, video/mp4, video/webm"
-                                        multiple
-                                    />
-                                </label>
-                            )
-                        )}
-                        {/* Sort photos chronologically by URL timestamp if available, else standard order */}
-                        {currentAlbum.photos
-                            .slice() // Clone to avoid mutation
-                            .sort((a, b) => {
-                                // Extract timestamp from pattern ".../TIMESTAMP_ID.ext"
-                                const getTimestamp = (url: string) => {
-                                    const match = url.match(/\/(\d{13})_/); // Match 13 digit timestamp followed by underscore
-                                    return match ? parseInt(match[1]) : 0;
-                                };
-                                const tsA = getTimestamp(a.url);
-                                const tsB = getTimestamp(b.url);
+                    <MasonryGrid
+                        photos={currentAlbum.photos}
+                        isOwner={isOwner && mounted}
+                        isSelectingCover={isSelectingCover}
+                        isUploading={isUploading}
+                        uploadProgress={uploadProgress}
+                        visibleCount={visibleCount}
+                        handleFileUpload={handleFileUpload}
+                        handleDeletePhoto={handleDeletePhoto}
+                        handlePhotoClick={handlePhotoClick}
+                        isLowPowerMode={isLowPowerMode}
+                    />
 
-                                if (tsA && tsB) return tsA - tsB; // Earliest to Latest (Ascending)
-                                if (tsA) return -1; // Specific timestamps first? user said "without date on the bottom"
-                                if (tsB) return 1;
-                                return 0;
-                            })
-                            .slice(0, visibleCount)
-                            .map((photo, i) => (
-                                <motion.div
-                                    key={photo.id}
-                                    id={`photo-${photo.id}`}
-                                    layout
-                                    onClick={() => handlePhotoClick(photo)}
-                                    initial={isLowPowerMode ? { opacity: 1 } : { opacity: 0, scale: 0.9 }}
-                                    animate={isLowPowerMode ? { opacity: 1 } : { opacity: 1, scale: 1 }}
-                                    transition={isLowPowerMode ? { duration: 0 } : { duration: 0.3, delay: i * 0.05 }}
-                                    className={clsx(
-                                        "aspect-square w-full rounded-xl overflow-hidden relative group cursor-pointer bg-white/5", // Force square for cleaner grid or let it flow? User said "top down like poems" usually implies variable height, but grid REQUIRES fixed structure unless we accept gaps. I'll use aspect-square+object-cover for uniformity requested by "Grid Top Down". 
-                                        // Actually user asked to "just display the photo". Aspect-square crops. 
-                                        // A standard Grid with variable heights aligns rows by tallest. 
-                                        // I'll stick to 'h-auto' but in a 'grid', this aligns tops.
-                                        // But standard grid cannot masonry (pack holes).
-                                        // However, user specifically asked for "not column at a time". 
-                                        // So I will use h-auto.
-                                        isSelectingCover ? "border-2 border-primary hover:opacity-80 scale-[0.98] transition-all" : ""
-                                    )}
-                                >
-                                    {isSelectingCover && (
-                                        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                                            <span className="bg-primary text-black font-bold px-3 py-1 rounded-full text-xs shadow-lg">SET AS COVER</span>
-                                        </div>
-                                    )}
-
-                                    {mounted && isOwner && !isSelectingCover && (
-                                        <button
-                                            onClick={(e) => handleDeletePhoto(photo.id, e)}
-                                            className="absolute top-2 right-2 z-30 p-2 bg-red-600/80 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Delete Photo"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    )}
-
-                                    {photo.type === "video" ? (
-                                        <video
-                                            src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
-                                            className="w-full h-full object-cover block"
-                                            controls={false}
-                                            onMouseOver={event => (event.target as HTMLVideoElement).play()}
-                                            onMouseOut={event => (event.target as HTMLVideoElement).pause()}
-                                            muted
-                                            loop
-                                            playsInline
-                                        />
-                                    ) : (
-                                        <img
-                                            src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
-                                            className="w-full h-full object-cover block transition-transform duration-500 group-hover:scale-105"
-                                            loading="lazy"
-                                        />
-                                    )}
-                                    <div className={clsx(
-                                        "absolute inset-0 bg-black/0 transition-colors pointer-events-none rounded-xl",
-                                        !isLowPowerMode && !isSelectingCover && "group-hover:bg-black/20"
-                                    )} />
-                                </motion.div>
-                            ))}
-                    </div>
                     {visibleCount < currentAlbum.photos.length && (
                         <div className="py-8 flex justify-center text-white/30 text-xs uppercase tracking-widest">
                             Loading more...
@@ -632,5 +529,176 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                 </div>
             </motion.div >
         </motion.div >
+    );
+}
+
+// Sub-component for Masonry Layout to keep main component clean
+function MasonryGrid({
+    photos,
+    isOwner,
+    isSelectingCover,
+    isUploading,
+    uploadProgress,
+    visibleCount,
+    handleFileUpload,
+    handleDeletePhoto,
+    handlePhotoClick,
+    isLowPowerMode
+}: any) {
+    const [columns, setColumns] = useState(2);
+
+    useEffect(() => {
+        const updateColumns = () => {
+            if (window.innerWidth >= 1024) setColumns(4);
+            else if (window.innerWidth >= 768) setColumns(3);
+            else setColumns(2);
+        };
+
+        updateColumns();
+        window.addEventListener('resize', updateColumns);
+        return () => window.removeEventListener('resize', updateColumns);
+    }, []);
+
+    // 1. Prepare items
+    const sortedPhotos = photos
+        .slice()
+        .sort((a: any, b: any) => {
+            const getTimestamp = (url: string) => {
+                const match = url.match(/\/(\d{13})_/);
+                return match ? parseInt(match[1]) : 0;
+            };
+            const tsA = getTimestamp(a.url);
+            const tsB = getTimestamp(b.url);
+            if (tsA && tsB) return tsA - tsB;
+            if (tsA) return -1;
+            if (tsB) return 1;
+            return 0;
+        })
+        .slice(0, visibleCount);
+
+    // 2. Distribute into columns
+    const cols: any[][] = Array.from({ length: columns }, () => []);
+
+    let itemIndex = 0;
+
+    // Add Upload Tile if applicable
+    if (isOwner && !isSelectingCover) {
+        cols[0].push({ type: 'upload_tile' });
+        itemIndex++;
+    }
+
+    // Distribute photos
+    sortedPhotos.forEach((photo: any) => {
+        cols[itemIndex % columns].push(photo);
+        itemIndex++;
+    });
+
+    return (
+        <div className="flex gap-4 items-start">
+            {cols.map((colItems, colIndex) => (
+                <div key={colIndex} className="flex-1 flex flex-col gap-4">
+                    {colItems.map((item: any, idx: number) => {
+                        if (item.type === 'upload_tile') {
+                            return (
+                                <div key="upload" className="w-full">
+                                    {isUploading ? (
+                                        <div className="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 p-4 mb-4">
+                                            <div className="flex flex-col items-center justify-center gap-3 w-full px-2">
+                                                <div className="p-3 rounded-full bg-white/10 text-white">
+                                                    <UploadCloud size={24} className="animate-bounce" />
+                                                </div>
+                                                <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                                                    <div
+                                                        className="bg-primary h-full transition-all duration-300"
+                                                        style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-xs font-bold text-white/50 tracking-wider">
+                                                    {uploadProgress.current}/{uploadProgress.total}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <label
+                                            className="aspect-square block w-full rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-colors group cursor-pointer p-4 mb-4"
+                                        >
+                                            <div className="p-3 rounded-full bg-primary/20 text-primary group-hover:scale-110 transition-transform">
+                                                <UploadCloud size={24} />
+                                            </div>
+                                            <span className="text-sm font-bold text-white/50">ADD MEDIA</span>
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                onChange={handleFileUpload}
+                                                accept="image/png, image/jpeg, image/webp, image/gif, video/mp4, video/webm"
+                                                multiple
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                            );
+                        }
+
+                        // Regular Photo
+                        const photo = item;
+                        return (
+                            <motion.div
+                                key={photo.id}
+                                id={`photo-${photo.id}`}
+                                layout
+                                onClick={() => handlePhotoClick(photo)}
+                                initial={isLowPowerMode ? { opacity: 1 } : { opacity: 0, scale: 0.9 }}
+                                animate={isLowPowerMode ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+                                transition={isLowPowerMode ? { duration: 0 } : { duration: 0.3 }}
+                                className={clsx(
+                                    "w-full rounded-xl overflow-hidden relative group cursor-pointer bg-white/5",
+                                    isSelectingCover ? "border-2 border-primary hover:opacity-80 scale-[0.98] transition-all" : ""
+                                )}
+                            >
+                                {isSelectingCover && (
+                                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                        <span className="bg-primary text-black font-bold px-3 py-1 rounded-full text-xs shadow-lg">SET AS COVER</span>
+                                    </div>
+                                )}
+
+                                {isOwner && !isSelectingCover && (
+                                    <button
+                                        onClick={(e) => handleDeletePhoto(photo.id, e)}
+                                        className="absolute top-2 right-2 z-30 p-2 bg-red-600/80 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Delete Photo"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                )}
+
+                                {photo.type === "video" ? (
+                                    <video
+                                        src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
+                                        className="w-full h-auto block"
+                                        controls={false}
+                                        onMouseOver={event => (event.target as HTMLVideoElement).play()}
+                                        onMouseOut={event => (event.target as HTMLVideoElement).pause()}
+                                        muted
+                                        loop
+                                        playsInline
+                                    />
+                                ) : (
+                                    <img
+                                        src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
+                                        className="w-full h-auto block transition-transform duration-500 group-hover:scale-105"
+                                        loading="lazy"
+                                        style={{ aspectRatio: 'auto' }}
+                                    />
+                                )}
+                                <div className={clsx(
+                                    "absolute inset-0 bg-black/0 transition-colors pointer-events-none rounded-xl",
+                                    !isLowPowerMode && !isSelectingCover && "group-hover:bg-black/20"
+                                )} />
+                            </motion.div>
+                        );
+                    })}
+                </div>
+            ))}
+        </div>
     );
 }
