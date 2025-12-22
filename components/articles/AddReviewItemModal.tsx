@@ -43,15 +43,21 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
 
         try {
             let imageUrl = null;
+            // Get Session
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) throw new Error("Not authenticated");
+            const token = session.access_token;
 
             // 1. Upload Image (Server-side via API)
             if (imageFile) {
                 const formData = new FormData();
                 formData.append('file', imageFile);
-                formData.append('email', process.env.NEXT_PUBLIC_OWNER_EMAIL || "");
 
                 const uploadRes = await fetch('/api/upload', {
                     method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: formData
                 });
 
@@ -68,19 +74,19 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
             const dateDisplay = `${day}-${month}-${year}`;
 
             // 3. Insert via API
-            const ownerEmail = process.env.NEXT_PUBLIC_OWNER_EMAIL;
-
             const res = await fetch('/api/reviews', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     article_id: articleId,
                     name,
                     rating,
                     content,
                     date_display: dateDisplay,
-                    image_url: imageUrl,
-                    email: ownerEmail
+                    image_url: imageUrl
                 })
             });
 

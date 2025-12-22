@@ -5,32 +5,40 @@ export async function POST(req: Request) {
     try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-        // const OWNER_EMAIL = process.env.NEXT_PUBLIC_OWNER_EMAIL; // Accessed later
 
         if (!supabaseUrl || !supabaseServiceKey) {
             return NextResponse.json({ error: 'Server Configuration Error: Missing Supabase URL or Key' }, { status: 500 });
         }
 
+        // 1. Verify User Token
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) {
+            return NextResponse.json({ error: 'Missing Authorization Header' }, { status: 401 });
+        }
+
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+        // Get user from token
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Invalid Token' }, { status: 401 });
+        }
+
+        // 2. Check Admin Status in DB (Profiles table)
+        const { data: userData, error: userError } = await supabaseAdmin
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', user.id)
+            .single();
+
+        if (userError || !userData?.is_admin) {
+            return NextResponse.json({ error: 'Unauthorized: Admin Access Required' }, { status: 403 });
+        }
 
         const formData = await req.formData();
         const file = formData.get('file') as File;
-        const email = formData.get('email') as string;
-
-        // Safe access to env var
-        const serverOwnerEmail = process.env.NEXT_PUBLIC_OWNER_EMAIL || "";
-
-        const safeOwnerEmail = serverOwnerEmail || 'Home.BobbyYu@gmail.com';
-
-        if (!safeOwnerEmail) {
-            return NextResponse.json({ error: "Server Misconfiguration: NEXT_PUBLIC_OWNER_EMAIL is not set on server." }, { status: 500 });
-        }
-
-        if (!email || email.toLowerCase() !== safeOwnerEmail.toLowerCase()) {
-            return NextResponse.json({
-                error: `Unauthorized. Client sent: '${email || "EMPTY"}'. Server expected: '${safeOwnerEmail}'`
-            }, { status: 401 });
-        }
 
         if (!file) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });

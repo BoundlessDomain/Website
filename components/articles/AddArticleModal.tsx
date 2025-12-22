@@ -41,16 +41,26 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
         setLoading(true);
 
         try {
+            // Get Session for Token
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) throw new Error("Not authenticated");
+            const token = session.access_token;
+
             let imageUrl = null;
 
             // 1. Upload Image (Server-side via API to bypass RLS)
             if (imageFile) {
                 const formData = new FormData();
                 formData.append('file', imageFile);
-                formData.append('email', process.env.NEXT_PUBLIC_OWNER_EMAIL || "");
+
+                // Note: 'email' field is no longer needed by API, but we keep formData structure clean.
+                // We pass token in headers.
 
                 const uploadRes = await fetch('/api/upload', {
                     method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: formData
                 });
 
@@ -67,16 +77,6 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
             const dateDisplay = `${day}-${month}-${year}`;
 
             // 3. Insert Record via API (Bypass RLS)
-            // We need to send the 'email' to verify owner. 
-            // We assume the user has the email in localStorage or we just send the OWNER_EMAIL env var from client side?
-            // NO, that's insecure. But the client already knows the owner email from env?
-            // Let's use the one from useUIStore or just send what we have.
-            // Better: 'verify-owner' checked the user provided email.
-            // For this fix, let's assume valid owner context.
-            // Using NEXT_PUBLIC_OWNER_EMAIL for the check essentially trusts the client, 
-            // but effectively we are protected by the "Admin" page being hidden.
-            const ownerEmail = process.env.NEXT_PUBLIC_OWNER_EMAIL;
-
             const res = await fetch('/api/articles', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -86,8 +86,7 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
                     date_display: dateDisplay,
                     image_url: imageUrl,
                     type,
-                    rating,
-                    email: ownerEmail
+                    rating
                 })
             });
 
