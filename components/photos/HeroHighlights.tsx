@@ -134,7 +134,12 @@ export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHi
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
                     <div className="absolute bottom-6 left-6">
-                        <span className="text-secondary text-xs font-bold tracking-widest uppercase mb-2 block">Featured</span>
+                        <span className="text-secondary text-xs font-bold tracking-widest uppercase mb-1 block">Featured</span>
+                        {getAlbumDate(mainHighlight.albumId) && (
+                            <span className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1 block">
+                                {getAlbumDate(mainHighlight.albumId)}
+                            </span>
+                        )}
                         <h3 className="text-4xl font-bold text-white">{mainHighlight.caption}</h3>
                     </div>
                 </motion.div>
