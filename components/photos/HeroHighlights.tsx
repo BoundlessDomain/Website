@@ -181,6 +181,11 @@ export default function HeroHighlights({ highlights, onSelectHighlight }: HeroHi
                                 !isLowPowerMode && "group-hover:opacity-80"
                             )} />
                             <div className="absolute bottom-4 left-4">
+                                {getAlbumDate(item.albumId) && (
+                                    <span className="text-white/70 text-[10px] font-bold uppercase tracking-widest mb-1 block">
+                                        {getAlbumDate(item.albumId)}
+                                    </span>
+                                )}
                                 <p className="text-lg font-bold text-white">{item.caption}</p>
                             </div>
                         </motion.div>
