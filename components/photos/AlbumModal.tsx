@@ -100,18 +100,29 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
 
     // Scroll to initial photo
     useEffect(() => {
-        if (initialPhotoId && mounted) {
-            setTimeout(() => {
+        if (initialPhotoId && mounted && currentAlbum) {
+            // Retry mechanism to ensure element is found
+            let attempts = 0;
+            const maxAttempts = 10;
+
+            const attemptScroll = () => {
                 const element = document.getElementById(`photo-${initialPhotoId}`);
                 if (element) {
                     element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     // Add a temporary highlight
                     element.classList.add('ring-4', 'ring-primary');
-                    setTimeout(() => element.classList.remove('ring-4', 'ring-primary'), 2000);
+                    // Longer duration (3s) so user sees it
+                    setTimeout(() => element.classList.remove('ring-4', 'ring-primary'), 3000);
+                } else if (attempts < maxAttempts) {
+                    attempts++;
+                    setTimeout(attemptScroll, 200); // Retry every 200ms
                 }
-            }, 500); // Wait for modal animation/render
+            };
+
+            // Start attempting after a short delay to allow layout to settle
+            setTimeout(attemptScroll, 300);
         }
-    }, [initialPhotoId, mounted]);
+    }, [initialPhotoId, mounted, currentAlbum]); // Added currentAlbum dependency/check
 
     if (!currentAlbum) return null;
 
@@ -474,12 +485,12 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                     )}
                 </div>
 
-                {/* Masonry Grid */}
-                <div className="flex-1 overflow-y-auto p-6">
-                    <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4">
+                {/* Grid - Switched from Masonry to CSS Grid for row-based animation and 4 columns */}
+                <div className="flex-1 overflow-y-auto p-6 scroll-smooth" id="album-scroll-container">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-20">
                         {mounted && isOwner && !isSelectingCover && (
                             isUploading ? (
-                                <div className="break-inside-avoid mb-4 rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 p-8">
+                                <div className="aspect-[4/3] rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 p-4">
                                     <div className="flex flex-col items-center justify-center gap-3 w-full px-4">
                                         <div className="p-3 rounded-full bg-white/10 text-white">
                                             <UploadCloud size={24} className="animate-bounce" />
@@ -491,13 +502,13 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                             />
                                         </div>
                                         <span className="text-xs font-bold text-white/50 tracking-wider">
-                                            UPLOADING {uploadProgress.current}/{uploadProgress.total}
+                                            {uploadProgress.current}/{uploadProgress.total}
                                         </span>
                                     </div>
                                 </div>
                             ) : (
                                 <label
-                                    className="break-inside-avoid mb-4 block w-full rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-colors group cursor-pointer p-8"
+                                    className="aspect-[4/3] block w-full rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-colors group cursor-pointer p-2"
                                 >
                                     <div className="p-3 rounded-full bg-primary/20 text-primary group-hover:scale-110 transition-transform">
                                         <UploadCloud size={24} />
@@ -519,11 +530,11 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                 id={`photo-${photo.id}`}
                                 layout
                                 onClick={() => handlePhotoClick(photo)}
-                                initial={isLowPowerMode ? { opacity: 1 } : { opacity: 0, y: 20 }}
+                                initial={isLowPowerMode ? { opacity: 1 } : { opacity: 0, y: 50 }}
                                 animate={isLowPowerMode ? { opacity: 1 } : { opacity: 1, y: 0 }}
-                                transition={isLowPowerMode ? { duration: 0 } : { delay: i * 0.1 }}
+                                transition={isLowPowerMode ? { duration: 0 } : { duration: 0.5, delay: i * 0.05 }}
                                 className={clsx(
-                                    "break-inside-avoid mb-4 block w-full rounded-xl overflow-hidden relative group cursor-pointer",
+                                    "aspect-[4/3] relative rounded-xl overflow-hidden group cursor-pointer bg-white/5",
                                     isSelectingCover ? "border-2 border-primary hover:opacity-80 scale-[0.98] transition-all" : ""
                                 )}
                             >
@@ -536,7 +547,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                 {mounted && isOwner && !isSelectingCover && (
                                     <button
                                         onClick={(e) => handleDeletePhoto(photo.id, e)}
-                                        className="absolute top-2 right-2 z-20 p-2 bg-red-600/80 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute top-2 right-2 z-30 p-2 bg-red-600/80 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                         title="Delete Photo"
                                     >
                                         <Trash2 size={14} />
@@ -544,29 +555,25 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                 )}
 
                                 {photo.type === "video" ? (
-                                    <div className="w-full relative group">
-                                        <video
-                                            src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
-                                            className="w-full h-auto object-contain block" // Removed zoom here too
-                                            controls={!isSelectingCover}
-                                            preload="metadata" // Optimisation: Don't auto-download heavy bits
-                                            loop
-                                            muted
-                                            playsInline
-                                        />
-                                    </div>
+                                    <video
+                                        src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                        controls={false} // Hide controls in grid for cleaner look
+                                        onMouseOver={event => (event.target as HTMLVideoElement).play()}
+                                        onMouseOut={event => (event.target as HTMLVideoElement).pause()}
+                                        muted
+                                        loop
+                                        playsInline
+                                    />
                                 ) : (
                                     <img
                                         src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
-                                        className={clsx(
-                                            "w-full h-auto object-contain block"
-                                            // Zoom removed here
-                                        )}
-                                        loading="eager" // Optimisation: Load immediately since we are preloading anyway
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        loading="lazy"
                                     />
                                 )}
                                 <div className={clsx(
-                                    "absolute inset-0 bg-black/0 transition-colors pointer-events-none rounded-xl",
+                                    "absolute inset-0 bg-black/0 transition-colors pointer-events-none",
                                     !isLowPowerMode && !isSelectingCover && "group-hover:bg-black/20"
                                 )} />
                             </motion.div>

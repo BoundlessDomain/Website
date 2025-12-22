@@ -89,6 +89,7 @@ export default function GalleryPage() {
                 <div className="pb-20 w-full max-w-7xl mx-auto px-4 relative">
                     <HeroHighlights
                         highlights={data.highlights || []}
+                        albums={data.albums || []}
                         onSelectHighlight={handleHighlightClick}
                     />
                     <AlbumRow
