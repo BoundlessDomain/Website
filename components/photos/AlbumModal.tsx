@@ -502,17 +502,17 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                     )}
                 </div>
 
-                {/* Masonry Grid with 4 Columns and Variable Height */}
+                {/* Grid with 4 Columns (Row Ordered) */}
                 <div
                     className="flex-1 overflow-y-auto p-6 scroll-smooth"
                     id="album-scroll-container"
                     onScroll={handleScroll}
                 >
-                    <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 pb-20">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-20 items-start align-top">
                         {mounted && isOwner && !isSelectingCover && (
                             isUploading ? (
-                                <div className="break-inside-avoid mb-4 rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 p-8">
-                                    <div className="flex flex-col items-center justify-center gap-3 w-full px-4">
+                                <div className="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 p-4">
+                                    <div className="flex flex-col items-center justify-center gap-3 w-full px-2">
                                         <div className="p-3 rounded-full bg-white/10 text-white">
                                             <UploadCloud size={24} className="animate-bounce" />
                                         </div>
@@ -529,7 +529,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                 </div>
                             ) : (
                                 <label
-                                    className="break-inside-avoid mb-4 block w-full rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-colors group cursor-pointer p-8"
+                                    className="aspect-square block w-full rounded-xl overflow-hidden bg-white/5 border border-white/5 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-colors group cursor-pointer p-4"
                                 >
                                     <div className="p-3 rounded-full bg-primary/20 text-primary group-hover:scale-110 transition-transform">
                                         <UploadCloud size={24} />
@@ -545,60 +545,84 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                                 </label>
                             )
                         )}
-                        {currentAlbum.photos.slice(0, visibleCount).map((photo, i) => (
-                            <motion.div
-                                key={photo.id}
-                                id={`photo-${photo.id}`}
-                                layout
-                                onClick={() => handlePhotoClick(photo)}
-                                initial={isLowPowerMode ? { opacity: 1 } : { opacity: 0, y: 20 }}
-                                animate={isLowPowerMode ? { opacity: 1 } : { opacity: 1, y: 0 }}
-                                transition={isLowPowerMode ? { duration: 0 } : { duration: 0.5, delay: i * 0.01 }} // Fast stagger to avoid "column load" look
-                                className={clsx(
-                                    "break-inside-avoid mb-4 block w-full rounded-xl overflow-hidden relative group cursor-pointer bg-white/5",
-                                    isSelectingCover ? "border-2 border-primary hover:opacity-80 scale-[0.98] transition-all" : ""
-                                )}
-                            >
-                                {isSelectingCover && (
-                                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                                        <span className="bg-primary text-black font-bold px-3 py-1 rounded-full text-xs shadow-lg">SET AS COVER</span>
-                                    </div>
-                                )}
+                        {/* Sort photos chronologically by URL timestamp if available, else standard order */}
+                        {currentAlbum.photos
+                            .slice() // Clone to avoid mutation
+                            .sort((a, b) => {
+                                // Extract timestamp from pattern ".../TIMESTAMP_ID.ext"
+                                const getTimestamp = (url: string) => {
+                                    const match = url.match(/\/(\d{13})_/); // Match 13 digit timestamp followed by underscore
+                                    return match ? parseInt(match[1]) : 0;
+                                };
+                                const tsA = getTimestamp(a.url);
+                                const tsB = getTimestamp(b.url);
 
-                                {mounted && isOwner && !isSelectingCover && (
-                                    <button
-                                        onClick={(e) => handleDeletePhoto(photo.id, e)}
-                                        className="absolute top-2 right-2 z-30 p-2 bg-red-600/80 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Delete Photo"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
-                                )}
+                                if (tsA && tsB) return tsA - tsB; // Earliest to Latest (Ascending)
+                                if (tsA) return -1; // Specific timestamps first? user said "without date on the bottom"
+                                if (tsB) return 1;
+                                return 0;
+                            })
+                            .slice(0, visibleCount)
+                            .map((photo, i) => (
+                                <motion.div
+                                    key={photo.id}
+                                    id={`photo-${photo.id}`}
+                                    layout
+                                    onClick={() => handlePhotoClick(photo)}
+                                    initial={isLowPowerMode ? { opacity: 1 } : { opacity: 0, scale: 0.9 }}
+                                    animate={isLowPowerMode ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+                                    transition={isLowPowerMode ? { duration: 0 } : { duration: 0.3, delay: i * 0.05 }}
+                                    className={clsx(
+                                        "aspect-square w-full rounded-xl overflow-hidden relative group cursor-pointer bg-white/5", // Force square for cleaner grid or let it flow? User said "top down like poems" usually implies variable height, but grid REQUIRES fixed structure unless we accept gaps. I'll use aspect-square+object-cover for uniformity requested by "Grid Top Down". 
+                                        // Actually user asked to "just display the photo". Aspect-square crops. 
+                                        // A standard Grid with variable heights aligns rows by tallest. 
+                                        // I'll stick to 'h-auto' but in a 'grid', this aligns tops.
+                                        // But standard grid cannot masonry (pack holes).
+                                        // However, user specifically asked for "not column at a time". 
+                                        // So I will use h-auto.
+                                        isSelectingCover ? "border-2 border-primary hover:opacity-80 scale-[0.98] transition-all" : ""
+                                    )}
+                                >
+                                    {isSelectingCover && (
+                                        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                            <span className="bg-primary text-black font-bold px-3 py-1 rounded-full text-xs shadow-lg">SET AS COVER</span>
+                                        </div>
+                                    )}
 
-                                {photo.type === "video" ? (
-                                    <video
-                                        src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
-                                        className="w-full h-auto object-contain block" // Natural height
-                                        controls={false}
-                                        onMouseOver={event => (event.target as HTMLVideoElement).play()}
-                                        onMouseOut={event => (event.target as HTMLVideoElement).pause()}
-                                        muted
-                                        loop
-                                        playsInline
-                                    />
-                                ) : (
-                                    <img
-                                        src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
-                                        className="w-full h-auto object-contain block transition-transform duration-500 group-hover:scale-105"
-                                        loading="lazy"
-                                    />
-                                )}
-                                <div className={clsx(
-                                    "absolute inset-0 bg-black/0 transition-colors pointer-events-none rounded-xl",
-                                    !isLowPowerMode && !isSelectingCover && "group-hover:bg-black/20"
-                                )} />
-                            </motion.div>
-                        ))}
+                                    {mounted && isOwner && !isSelectingCover && (
+                                        <button
+                                            onClick={(e) => handleDeletePhoto(photo.id, e)}
+                                            className="absolute top-2 right-2 z-30 p-2 bg-red-600/80 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="Delete Photo"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
+
+                                    {photo.type === "video" ? (
+                                        <video
+                                            src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
+                                            className="w-full h-full object-cover block"
+                                            controls={false}
+                                            onMouseOver={event => (event.target as HTMLVideoElement).play()}
+                                            onMouseOut={event => (event.target as HTMLVideoElement).pause()}
+                                            muted
+                                            loop
+                                            playsInline
+                                        />
+                                    ) : (
+                                        <img
+                                            src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
+                                            className="w-full h-full object-cover block transition-transform duration-500 group-hover:scale-105"
+                                            loading="lazy"
+                                        />
+                                    )}
+                                    <div className={clsx(
+                                        "absolute inset-0 bg-black/0 transition-colors pointer-events-none rounded-xl",
+                                        !isLowPowerMode && !isSelectingCover && "group-hover:bg-black/20"
+                                    )} />
+                                </motion.div>
+                            ))}
                     </div>
                     {visibleCount < currentAlbum.photos.length && (
                         <div className="py-8 flex justify-center text-white/30 text-xs uppercase tracking-widest">

@@ -129,8 +129,8 @@ export default function HeroHighlights({ highlights, albums, onSelectHighlight }
     const secondaryHighlights = displayHighlights.slice(1, 3);
 
     return (
-        <div className="w-full mb-8 relative group/section">
-            <div className="flex items-center justify-between border-b border-white/10 mb-6 pb-2">
+        <div className="w-full mb-4 relative group/section">
+            <div className="flex items-center justify-between border-b border-white/10 mb-2 pb-2">
                 <h2 className="text-2xl font-bold text-white tracking-widest">
                     HIGHLIGHTS
                 </h2>
@@ -159,11 +159,6 @@ export default function HeroHighlights({ highlights, albums, onSelectHighlight }
                     whileHover={!isLowPowerMode ? { scale: 0.99 } : undefined}
                 >
                     {/* Render current main highlight based on rotation if needed, but for now we stick to static [0] unless logic changes */}
-                    {/* Actually, the layout implies static positions for 1st, 2nd, 3rd items from the list.
-                        The 'currentIndex' rotation logic was for a carousel, but the UI is a grid. 
-                        If we want a carousel effect, we should rotate the 'highlights' array itself.
-                        For now, let's keep the Grid consistent with the design.
-                    */}
                     {mainHighlight.type === 'video' ? (
                         <video
                             src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(mainHighlight.url)}`}
@@ -187,15 +182,15 @@ export default function HeroHighlights({ highlights, albums, onSelectHighlight }
                             loading="lazy"
                         />
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
+                    {/* Removed dark tint gradient */}
                     <div className="absolute bottom-6 left-6">
                         <span className="text-secondary text-xs font-bold tracking-widest uppercase mb-1 block">Featured</span>
                         {getAlbumDate(mainHighlight.albumId) && (
-                            <span className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1 block">
+                            <span className="text-primary text-xs font-bold uppercase tracking-widest mb-1 block">
                                 {getAlbumDate(mainHighlight.albumId)}
                             </span>
                         )}
-                        <h3 className="text-4xl font-bold text-white">{mainHighlight.caption}</h3>
+                        <h3 className="text-4xl font-bold text-white text-shadow-sm sm:text-shadow-md">{mainHighlight.caption}</h3>
                     </div>
                 </motion.div>
 
@@ -236,17 +231,14 @@ export default function HeroHighlights({ highlights, albums, onSelectHighlight }
                                     loading="lazy"
                                 />
                             )}
-                            <div className={clsx(
-                                "absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-60 transition-opacity",
-                                !isLowPowerMode && "group-hover:opacity-80"
-                            )} />
+                            {/* Removed dark tint gradient */}
                             <div className="absolute bottom-4 left-4">
                                 {getAlbumDate(item.albumId) && (
-                                    <span className="text-white/70 text-[10px] font-bold uppercase tracking-widest mb-1 block">
+                                    <span className="text-primary text-[10px] font-bold uppercase tracking-widest mb-1 block">
                                         {getAlbumDate(item.albumId)}
                                     </span>
                                 )}
-                                <p className="text-lg font-bold text-white">{item.caption}</p>
+                                <p className="text-lg font-bold text-white text-shadow-sm">{item.caption}</p>
                             </div>
                         </motion.div>
                     ))}
