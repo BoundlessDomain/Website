@@ -13,7 +13,8 @@ interface AddArticleModalProps {
 
 export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArticleModalProps) {
     const [title, setTitle] = useState("");
-    const [rating, setRating] = useState<number>(8);
+    const [type, setType] = useState<"standard" | "review_collection">("standard");
+    const [rating, setRating] = useState<number>(8); // Still used for standard articles
     const [dateDisplay, setDateDisplay] = useState(new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
     const [content, setContent] = useState("");
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -55,15 +56,21 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
             }
 
             // 2. Insert Record
+            const insertData: any = {
+                title,
+                content,
+                date_display: dateDisplay,
+                image_url: imageUrl,
+                type
+            };
+
+            if (type === 'standard') {
+                insertData.rating = rating;
+            }
+
             const { error: insertError } = await supabase
                 .from('articles')
-                .insert({
-                    title,
-                    rating,
-                    content,
-                    date_display: dateDisplay,
-                    image_url: imageUrl
-                });
+                .insert(insertData);
 
             if (insertError) throw insertError;
 
@@ -72,6 +79,8 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
             setContent("");
             setImageFile(null);
             setImagePreview(null);
+            setRating(8);
+            setType("standard");
             onSuccess();
             onClose();
 
@@ -121,7 +130,7 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
                                         placeholder="e.g. Bottled Water Review"
                                     />
                                     {/* Type Selection */}
-                                    <div>
+                                    <div className="mt-4">
                                         <label className="block text-sm font-medium text-white/60 mb-1">Format</label>
                                         <select
                                             value={type}
