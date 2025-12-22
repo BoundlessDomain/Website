@@ -9,6 +9,8 @@ import AddArticleModal from "@/components/articles/AddArticleModal";
 import { useUIStore } from "@/store/uiStore";
 import { supabase } from "@/utils/supabase";
 
+export const dynamic = 'force-dynamic';
+
 interface Article {
     id: string;
     title: string;

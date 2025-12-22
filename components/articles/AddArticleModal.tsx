@@ -43,27 +43,24 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
         try {
             let imageUrl = null;
 
-            // 1. Upload Image (Client-side upload remains fine if bucket is public/authenticated, but RLS might fail if no auth session)
-            // If bucket RLS fails, we might need an API proxy for upload too. 
-            // Assuming bucket is Public Read / Auth Write. If user not logged in, this fails.
-            // WORKAROUND: For now, try client upload. If it fails, report it.
+            // 1. Upload Image (Server-side via API to bypass RLS)
             if (imageFile) {
-                const fileExt = imageFile.name.split('.').pop();
-                const fileName = `${Date.now()}.${fileExt}`;
-                const { error: uploadError, data } = await supabase.storage
-                    .from('article-images')
-                    .upload(fileName, imageFile);
+                const formData = new FormData();
+                formData.append('file', imageFile);
+                formData.append('email', process.env.NEXT_PUBLIC_OWNER_EMAIL || "");
 
-                if (uploadError) {
-                    console.error("Upload error (likely RLS):", uploadError);
-                    throw new Error("Image upload failed. You might need to sign in differently or RLS is blocking.");
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!uploadRes.ok) {
+                    const err = await uploadRes.json();
+                    throw new Error(err.error || "Image upload failed");
                 }
 
-                const { data: { publicUrl } } = supabase.storage
-                    .from('article-images')
-                    .getPublicUrl(fileName);
-
-                imageUrl = publicUrl;
+                const uploadData = await uploadRes.json();
+                imageUrl = uploadData.url;
             }
 
             // 2. Format Date "DD-MM-YYYY"

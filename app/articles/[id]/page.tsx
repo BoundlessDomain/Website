@@ -10,6 +10,8 @@ import AddReviewItemModal from "@/components/articles/AddReviewItemModal";
 import { useUIStore } from "@/store/uiStore";
 import { supabase } from "@/utils/supabase";
 
+export const dynamic = 'force-dynamic';
+
 interface Article {
     id: string;
     title: string;

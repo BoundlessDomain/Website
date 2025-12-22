@@ -44,25 +44,24 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
         try {
             let imageUrl = null;
 
-            // 1. Upload Image (Attempt client upload)
+            // 1. Upload Image (Server-side via API)
             if (imageFile) {
-                const fileExt = imageFile.name.split('.').pop();
-                const fileName = `item-${Date.now()}.${fileExt}`;
-                const { error: uploadError, data } = await supabase.storage
-                    .from('article-images')
-                    .upload(fileName, imageFile);
+                const formData = new FormData();
+                formData.append('file', imageFile);
+                formData.append('email', process.env.NEXT_PUBLIC_OWNER_EMAIL || "");
 
-                if (uploadError) {
-                    console.error("Upload error:", uploadError);
-                    // Proceed without image? Or throw?
-                    // throw new Error("Image upload blocked.");
-                } else {
-                    const { data: { publicUrl } } = supabase.storage
-                        .from('article-images')
-                        .getPublicUrl(fileName);
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                    imageUrl = publicUrl;
+                if (!uploadRes.ok) {
+                    const err = await uploadRes.json();
+                    throw new Error(err.error || "Image upload failed");
                 }
+
+                const uploadData = await uploadRes.json();
+                imageUrl = uploadData.url;
             }
 
             // 2. Format Date
