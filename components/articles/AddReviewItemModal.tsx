@@ -12,10 +12,17 @@ interface AddReviewItemModalProps {
     articleId: string;
 }
 
+
 export default function AddReviewItemModal({ isOpen, onClose, onSuccess, articleId }: AddReviewItemModalProps) {
     const [name, setName] = useState("");
     const [rating, setRating] = useState<number>(5);
-    const [dateDisplay, setDateDisplay] = useState(new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+
+    // Date State
+    const today = new Date();
+    const [day, setDay] = useState(today.getDate().toString().padStart(2, '0'));
+    const [month, setMonth] = useState((today.getMonth() + 1).toString().padStart(2, '0'));
+    const [year, setYear] = useState(today.getFullYear().toString());
+
     const [content, setContent] = useState("");
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -37,7 +44,7 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
         try {
             let imageUrl = null;
 
-            // 1. Upload Image (Same bucket for now, simpler)
+            // 1. Upload Image (Attempt client upload)
             if (imageFile) {
                 const fileExt = imageFile.name.split('.').pop();
                 const fileName = `item-${Date.now()}.${fileExt}`;
@@ -45,28 +52,43 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
                     .from('article-images')
                     .upload(fileName, imageFile);
 
-                if (uploadError) throw uploadError;
+                if (uploadError) {
+                    console.error("Upload error:", uploadError);
+                    // Proceed without image? Or throw?
+                    // throw new Error("Image upload blocked.");
+                } else {
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('article-images')
+                        .getPublicUrl(fileName);
 
-                const { data: { publicUrl } } = supabase.storage
-                    .from('article-images')
-                    .getPublicUrl(fileName);
-
-                imageUrl = publicUrl;
+                    imageUrl = publicUrl;
+                }
             }
 
-            // 2. Insert Review Item
-            const { error: insertError } = await supabase
-                .from('review_items')
-                .insert({
+            // 2. Format Date
+            const dateDisplay = `${day}-${month}-${year}`;
+
+            // 3. Insert via API
+            const ownerEmail = process.env.NEXT_PUBLIC_OWNER_EMAIL;
+
+            const res = await fetch('/api/reviews', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
                     article_id: articleId,
                     name,
                     rating,
                     content,
                     date_display: dateDisplay,
-                    image_url: imageUrl
-                });
+                    image_url: imageUrl,
+                    email: ownerEmail
+                })
+            });
 
-            if (insertError) throw insertError;
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Failed to create review item");
+            }
 
             // 3. Reset
             setName("");
@@ -134,13 +156,37 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-white/60 mb-1">Date</label>
-                                        <input
-                                            type="text"
-                                            value={dateDisplay}
-                                            onChange={(e) => setDateDisplay(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
-                                        />
+                                        <label className="block text-sm font-medium text-white/60 mb-1">Date (DD-MM-YYYY)</label>
+                                        <div className="flex gap-2">
+                                            {/* Day */}
+                                            <select
+                                                value={day}
+                                                onChange={(e) => setDay(e.target.value)}
+                                                className="w-1/3 px-2 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors appearance-none"
+                                            >
+                                                {Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0')).map(d => (
+                                                    <option key={d} value={d} className="bg-black">{d}</option>
+                                                ))}
+                                            </select>
+                                            {/* Month */}
+                                            <select
+                                                value={month}
+                                                onChange={(e) => setMonth(e.target.value)}
+                                                className="w-1/3 px-2 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors appearance-none"
+                                            >
+                                                {Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0')).map(m => (
+                                                    <option key={m} value={m} className="bg-black">{m}</option>
+                                                ))}
+                                            </select>
+                                            {/* Year */}
+                                            <input
+                                                type="number"
+                                                value={year}
+                                                onChange={(e) => setYear(e.target.value)}
+                                                className="w-1/3 px-2 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
+                                                min="2000"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 

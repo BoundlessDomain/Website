@@ -47,19 +47,21 @@ export default function ArticleCard({ title, rating, date, imageSrc, children, o
                     </span>
                 </div>
 
-                {/* Rating */}
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="flex">
-                        {[...Array(10)].map((_, i) => (
-                            <div
-                                key={i}
-                                className={`w-1.5 h-3 rounded-full mr-0.5 ${i < rating ? "bg-primary" : "bg-white/10"
-                                    }`}
-                            />
-                        ))}
+                {/* Rating (Only show if > 0) */}
+                {rating > 0 && (
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="flex">
+                            {[...Array(10)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className={`w-1.5 h-3 rounded-full mr-0.5 ${i < rating ? "bg-primary" : "bg-white/10"
+                                        }`}
+                                />
+                            ))}
+                        </div>
+                        <span className="text-sm font-bold text-primary">{rating}/10</span>
                     </div>
-                    <span className="text-sm font-bold text-primary">{rating}/10</span>
-                </div>
+                )}
 
                 {/* Body Text */}
                 <div className="text-white/70 leading-relaxed text-sm md:text-base line-clamp-4 md:line-clamp-none">
