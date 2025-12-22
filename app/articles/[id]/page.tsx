@@ -39,7 +39,7 @@ export default function ArticleDetailPage() {
     const isOwner = useUIStore((state) => state.isOwner);
     const [article, setArticle] = useState<Article | null>(null);
     const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [isAddOpen, setIsAddOpen] = useState(false);
 
     // Edit State
@@ -107,126 +107,140 @@ export default function ArticleDetailPage() {
 
     return (
         <PageTransition icon={FileText} title="ARTICLE" quadrant="top-left">
-            const [editArticle, setEditArticle] = useState<Article | null>(null);
-            const [editReviewItem, setEditReviewItem] = useState<ReviewItem | null>(null);
-            const [isAddArticleOpen, setIsAddArticleOpen] = useState(false); // For editing main article
+            <div className="space-y-12 pb-24 relative">
 
-            // Import AddArticleModal (Make sure to add import at top if missing)
-            import AddArticleModal from "@/components/articles/AddArticleModal";
+                {/* Back Button */}
+                <Link href="/articles" className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-4">
+                    <ArrowLeft size={20} />
+                    Back to Articles
+                </Link>
 
-            // ... existing fetchData ...
+                {/* Article Header */}
+                <div className="space-y-6">
+                    {/* Cover Image */}
+                    {article.image_url && (
+                        <div className="w-full aspect-[21/9] rounded-2xl overflow-hidden bg-black/20 shadow-2xl border border-white/10">
+                            <img src={article.image_url} alt={article.title} className="w-full h-full object-cover" />
+                        </div>
+                    )}
 
-            // ... render ...
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
-                {/* Title & Meta */}
-                <div>
-                    <span className="text-primary font-mono text-sm tracking-wider uppercase mb-2 block">
-                        {article.type === 'review_collection' ? 'Review Collection' : 'Article'}
-                    </span>
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{article.title}</h1>
-                    <span className="text-white/40">{article.date_display}</span>
-                </div>
-                {article.rating && (
-                    <div className="text-right">
-                        <span className="text-sm text-white/40 block">Rating</span>
-                        <span className="text-3xl font-bold text-primary">{article.rating.toFixed(1)}/10</span>
-                    </div>
-                )}
-                {/* Edit Button for Main Article */}
-                {isOwner && (
-                    <div className="absolute top-0 right-0">
-                        <button
-                            onClick={() => {
-                                setEditArticle(article);
-                                setIsAddArticleOpen(true);
-                            }}
-                            className="p-3 bg-red-500/80 hover:bg-red-500 text-white rounded-full shadow-lg transition-transform hover:scale-110"
-                            title="Edit Article"
-                        >
-                            <Pencil size={20} />
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* ... Content ... */}
-
-            {/* Review Items */}
-            {article.type === 'review_collection' && (
-                <div className="space-y-8 mt-16 pt-8 border-t border-white/10">
-                    {/* ... Header ... */}
-                    <h2 className="text-2xl font-bold text-white">Reviewed Items</h2>
-
-                    <div className="space-y-6">
-                        {reviewItems.length > 0 ? (
-                            reviewItems.map((item) => (
-                                <ArticleCard
-                                    key={item.id}
-                                    title={item.name}
-                                    rating={item.rating}
-                                    date={item.date_display}
-                                    imageSrc={item.image_url}
-                                    onEdit={isOwner ? (e) => {
-                                        setEditReviewItem(item);
-                                        // We reuse the AddReviewItemModal but need a way to open it for editing
-                                        // Let's use a separate state or just re-purpose isAddOpen
-                                        setIsAddOpen(true);
-                                    } : undefined}
+                    {/* Title & Meta */}
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
+                        {/* Title & Meta */}
+                        <div>
+                            <span className="text-primary font-mono text-sm tracking-wider uppercase mb-2 block">
+                                {article.type === 'review_collection' ? 'Review Collection' : 'Article'}
+                            </span>
+                            <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{article.title}</h1>
+                            <span className="text-white/40">{article.date_display}</span>
+                        </div>
+                        {article.rating && (
+                            <div className="text-right">
+                                <span className="text-sm text-white/40 block">Rating</span>
+                                <span className="text-3xl font-bold text-primary">{article.rating.toFixed(1)}/10</span>
+                            </div>
+                        )}
+                        {/* Edit Button for Main Article */}
+                        {isOwner && (
+                            <div className="absolute top-0 right-0">
+                                <button
+                                    onClick={() => {
+                                        setEditArticle(article);
+                                        setIsAddArticleOpen(true);
+                                    }}
+                                    className="p-3 bg-red-500/80 hover:bg-red-500 text-white rounded-full shadow-lg transition-transform hover:scale-110"
+                                    title="Edit Article"
                                 >
-                                    <p className="whitespace-pre-wrap">{item.content}</p>
-                                </ArticleCard>
-                            ))
-                        ) : (
-                            <p className="text-white/40 italic">No items reviewed yet.</p>
+                                    <Pencil size={20} />
+                                </button>
+                            </div>
                         )}
                     </div>
 
-                    {/* Add Item Button */}
-                    {isOwner && (
-                        <div className="fixed bottom-8 right-8 z-50">
-                            <button
-                                className="flex items-center gap-2 px-6 py-3 bg-primary text-black font-bold rounded-full 
-                                              shadow-[0_0_20px_var(--primary-glow)] hover:scale-105 active:scale-95 transition-all"
-                                onClick={() => {
-                                    setEditReviewItem(null); // Clear edit state for adding new
-                                    setIsAddOpen(true);
-                                }}
-                            >
-                                <Plus size={20} />
-                                Add Review Item
-                            </button>
+                    {/* Content */}
+                    <div className="p-8 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-xl">
+                        <div className="prose prose-invert prose-lg max-w-none text-white/90 leading-relaxed whitespace-pre-wrap">
+                            {article.content}
                         </div>
-                    )}
+                    </div>
                 </div>
-            )}
 
-            {/* Modals */}
+                {/* Review Items */}
+                {article.type === 'review_collection' && (
+                    <div className="space-y-8 mt-16 pt-8 border-t border-white/10">
+                        {/* ... Header ... */}
+                        <h2 className="text-2xl font-bold text-white">Reviewed Items</h2>
 
-            {/* 1. Review Item Modal (Add/Edit) */}
-            <AddReviewItemModal
-                isOpen={isAddOpen}
-                onClose={() => {
-                    setIsAddOpen(false);
-                    setEditReviewItem(null);
-                }}
-                onSuccess={fetchData}
-                articleId={article.id}
-                initialData={editReviewItem}
-            />
+                        <div className="space-y-6">
+                            {reviewItems.length > 0 ? (
+                                reviewItems.map((item) => (
+                                    <ArticleCard
+                                        key={item.id}
+                                        title={item.name}
+                                        rating={item.rating}
+                                        date={item.date_display}
+                                        imageSrc={item.image_url}
+                                        onEdit={isOwner ? (e) => {
+                                            setEditReviewItem(item);
+                                            // We reuse the AddReviewItemModal but need a way to open it for editing
+                                            // Let's use a separate state or just re-purpose isAddOpen
+                                            setIsAddOpen(true);
+                                        } : undefined}
+                                    >
+                                        <p className="whitespace-pre-wrap">{item.content}</p>
+                                    </ArticleCard>
+                                ))
+                            ) : (
+                                <p className="text-white/40 italic">No items reviewed yet.</p>
+                            )}
+                        </div>
 
-            {/* 2. Article Modal (Edit Main Article) */}
-            {isAddArticleOpen && (
-                <AddArticleModal
-                    isOpen={isAddArticleOpen}
+                        {/* Add Item Button */}
+                        {isOwner && (
+                            <div className="fixed bottom-8 right-8 z-50">
+                                <button
+                                    className="flex items-center gap-2 px-6 py-3 bg-primary text-black font-bold rounded-full 
+                                              shadow-[0_0_20px_var(--primary-glow)] hover:scale-105 active:scale-95 transition-all"
+                                    onClick={() => {
+                                        setEditReviewItem(null); // Clear edit state for adding new
+                                        setIsAddOpen(true);
+                                    }}
+                                >
+                                    <Plus size={20} />
+                                    Add Review Item
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Modals */}
+
+                {/* 1. Review Item Modal (Add/Edit) */}
+                <AddReviewItemModal
+                    isOpen={isAddOpen}
                     onClose={() => {
-                        setIsAddArticleOpen(false);
-                        setEditArticle(null);
+                        setIsAddOpen(false);
+                        setEditReviewItem(null);
                     }}
                     onSuccess={fetchData}
-                    initialData={editArticle}
+                    articleId={article.id}
+                    initialData={editReviewItem}
                 />
-            )}
-        </div>
+
+                {/* 2. Article Modal (Edit Main Article) */}
+                {isAddArticleOpen && (
+                    <AddArticleModal
+                        isOpen={isAddArticleOpen}
+                        onClose={() => {
+                            setIsAddArticleOpen(false);
+                            setEditArticle(null);
+                        }}
+                        onSuccess={fetchData}
+                        initialData={editArticle}
+                    />
+                )}
+            </div>
         </PageTransition >
     );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Upload, Loader2, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/utils/supabase";
@@ -30,7 +30,6 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Pre-fill / Reset Data
-    import { useEffect } from "react";
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
@@ -194,7 +193,10 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
                                             max="10"
                                             step="0.1"
                                             value={rating}
-                                            onChange={(e) => setRating(e.target.value)}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setRating(val === '' ? '' : parseFloat(val));
+                                            }}
                                             className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
                                         />
                                     </div>

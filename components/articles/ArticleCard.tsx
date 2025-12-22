@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
+import { Pencil } from "lucide-react";
 
 interface ArticleCardProps {
     title: string;
@@ -13,7 +14,6 @@ interface ArticleCardProps {
     onEdit?: (e: React.MouseEvent) => void;
 }
 
-import { Pencil } from "lucide-react";
 
 export default function ArticleCard({ title, rating, date, imageSrc, children, onClick, onEdit }: ArticleCardProps) {
     return (
@@ -73,15 +73,12 @@ export default function ArticleCard({ title, rating, date, imageSrc, children, o
                             {[...Array(10)].map((_, i) => (
                                 <div
                                     key={i}
-                                    className={`w-1.5 h-3 rounded-full mr-0.5 ${
-                                        i < Math.floor(rating) 
-                                            ? "bg-primary" 
-                                            : i === Math.floor(rating) && rating % 1 !== 0 
-                                                ? "bg-gradient-to-r from-primary to-white/10" // Partial fill style if needed, or just allow integer bars. 
-                                                // Simple version: Fill integer bars.
-                                                // Actually, let's keep it simple: 
-                                                i < rating ? "bg-primary" : "bg-white/10"
-                                    }`}
+                                    className={`w-1.5 h-3 rounded-full mr-0.5 ${i < Math.floor(rating)
+                                            ? "bg-primary"
+                                            : i === Math.floor(rating) && rating % 1 !== 0
+                                                ? "bg-gradient-to-r from-primary to-white/10"
+                                                : "bg-white/10"
+                                        }`}
                                 />
                             ))}
                         </div>

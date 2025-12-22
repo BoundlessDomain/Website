@@ -1,6 +1,4 @@
-"use client";
-
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Upload, Loader2, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/utils/supabase";
@@ -30,35 +28,10 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess, initialDat
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Pre-fill data if editing
-    useState(() => {
-        if (initialData) {
-            setTitle(initialData.title);
-            setType(initialData.type || "standard");
-            setRating(initialData.rating || 8);
-            setContent(initialData.content);
-            setImagePreview(initialData.image_url);
-
-            if (initialData.date_display) {
-                const [d, m, y] = initialData.date_display.split('-');
-                if (d && m && y) {
-                    setDay(d);
-                    setMonth(m);
-                    setYear(y);
-                }
-            }
-        } else {
-            // Reset if no initial data (Adding new)
-            setTitle("");
-            setContent("");
-            setImagePreview(null);
-            setRating(8);
-            setType("standard");
-        }
-    });
+    // Note: useEffect below handles synchronization better, this useState initializer only runs once.
+    // We can keep it or rely on useEffect.
 
     // Reset when modal opens/closes or initialData changes
-    // Actually better to use useEffect to sync initialData changes when isOpen
-    import { useEffect } from "react";
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
@@ -241,7 +214,10 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess, initialDat
                                                 max="10"
                                                 step="0.1"
                                                 value={rating}
-                                                onChange={(e) => setRating(e.target.value)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setRating(val === '' ? '' : parseFloat(val));
+                                                }}
                                                 className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
                                             />
                                         </div>
