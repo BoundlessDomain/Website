@@ -79,7 +79,10 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess }: AddArtic
             // 3. Insert Record via API (Bypass RLS)
             const res = await fetch('/api/articles', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     title,
                     content,
