@@ -9,10 +9,11 @@ interface AddArticleModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    onDelete?: () => void;
     initialData?: any; // For editing
 }
 
-export default function AddArticleModal({ isOpen, onClose, onSuccess, initialData }: AddArticleModalProps) {
+export default function AddArticleModal({ isOpen, onClose, onSuccess, onDelete, initialData }: AddArticleModalProps) {
     const [title, setTitle] = useState("");
     const [type, setType] = useState<"standard" | "review_collection">("standard");
     // Rating removed as per request
@@ -100,7 +101,11 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess, initialDat
                 throw new Error(err.error || "Failed to delete article");
             }
 
-            onSuccess();
+            if (onDelete) {
+                onDelete();
+            } else {
+                onSuccess();
+            }
             onClose();
 
         } catch (error: any) {

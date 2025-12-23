@@ -231,6 +231,10 @@ export default function ArticleDetailPage() {
                             setEditArticle(null);
                         }}
                         onSuccess={fetchData}
+                        onDelete={() => {
+                            // Redirect to main articles page
+                            window.location.href = '/articles';
+                        }}
                         initialData={editArticle}
                     />
                 )}
