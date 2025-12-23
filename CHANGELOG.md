@@ -1,5 +1,8 @@
 # Changelog
 
+## V3.5.1 - Gallery Fixes
+- **Fix:** Resolved image display issues and API path handling for gallery images.
+
 ## V3.5.0 - Article Management & Security Improvements
 - **Feature:** Enhanced Article Management
   - Implemented secure delete functionality with name confirmation.
