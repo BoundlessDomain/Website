@@ -46,8 +46,8 @@ export default function ArticlePhotosGallery({ articleId }: ArticlePhotosGallery
     }, [articleId]);
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
 
         try {
             setUploading(true);
@@ -57,7 +57,10 @@ export default function ArticlePhotosGallery({ articleId }: ArticlePhotosGallery
             if (!session) throw new Error("Not authenticated");
 
             const formData = new FormData();
-            formData.append('file', file);
+            // Append all files
+            Array.from(files).forEach((file) => {
+                formData.append('file', file);
+            });
 
             const res = await fetch(`${getApiUrl()}/api/articles/${articleId}/photos`, {
                 method: 'POST',
@@ -72,12 +75,18 @@ export default function ArticlePhotosGallery({ articleId }: ArticlePhotosGallery
                 throw new Error(error.error || "Upload failed");
             }
 
+            const result = await res.json();
+            if (result.errors && result.errors.length > 0) {
+                console.warn("Some files failed to upload:", result.errors);
+                alert(`Uploaded ${result.uploaded.length} photos. ${result.errors.length} failed.`);
+            }
+
             // Refresh photos
             await fetchPhotos();
 
         } catch (error) {
             console.error("Upload error:", error);
-            alert("Failed to upload photo. Check console.");
+            alert("Failed to upload photos. Check console.");
         } finally {
             setUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = "";
@@ -96,6 +105,7 @@ export default function ArticlePhotosGallery({ articleId }: ArticlePhotosGallery
                         <input
                             type="file"
                             accept="image/*"
+                            multiple
                             ref={fileInputRef}
                             className="hidden"
                             onChange={handleFileSelect}

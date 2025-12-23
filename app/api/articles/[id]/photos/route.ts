@@ -55,45 +55,57 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         }
 
         const formData = await req.formData();
-        const file = formData.get('file') as File;
+        const files = formData.getAll('file') as File[];
 
-        if (!file) {
-            return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+        if (!files || files.length === 0) {
+            return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
         }
 
-        // Upload to Storage
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${articleId}/${Date.now()}.${fileExt}`;
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = new Uint8Array(arrayBuffer);
+        const results = [];
+        const errors = [];
 
-        const { error: uploadError } = await supabaseAdmin.storage
-            .from('article-photos')
-            .upload(fileName, buffer, {
-                contentType: file.type,
-                upsert: false
-            });
+        for (const file of files) {
+            try {
+                // Upload to Storage
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${articleId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`; // Add random string to avoid timestamp collision
+                const arrayBuffer = await file.arrayBuffer();
+                const buffer = new Uint8Array(arrayBuffer);
 
-        if (uploadError) throw uploadError;
+                const { error: uploadError } = await supabaseAdmin.storage
+                    .from('article-photos')
+                    .upload(fileName, buffer, {
+                        contentType: file.type,
+                        upsert: false
+                    });
 
-        // Get Public URL
-        const { data: { publicUrl } } = supabaseAdmin.storage
-            .from('article-photos')
-            .getPublicUrl(fileName);
+                if (uploadError) throw uploadError;
 
-        // Insert into DB
-        const { data: insertData, error: insertError } = await supabaseAdmin
-            .from('article_photos')
-            .insert({
-                article_id: articleId,
-                image_url: publicUrl
-            })
-            .select()
-            .single();
+                // Get Public URL
+                const { data: { publicUrl } } = supabaseAdmin.storage
+                    .from('article-photos')
+                    .getPublicUrl(fileName);
 
-        if (insertError) throw insertError;
+                // Insert into DB
+                const { data: insertData, error: insertError } = await supabaseAdmin
+                    .from('article_photos')
+                    .insert({
+                        article_id: articleId,
+                        image_url: publicUrl
+                    })
+                    .select()
+                    .single();
 
-        return NextResponse.json(insertData);
+                if (insertError) throw insertError;
+                results.push(insertData);
+
+            } catch (err: any) {
+                console.error(`Failed to upload ${file.name}:`, err);
+                errors.push({ file: file.name, error: err.message });
+            }
+        }
+
+        return NextResponse.json({ uploaded: results, errors });
 
     } catch (error: any) {
         console.error("Upload error:", error);
