@@ -15,11 +15,15 @@ interface ArticleCardProps {
 }
 
 
+import { useUIStore } from "@/store/uiStore";
+
 export default function ArticleCard({ title, rating, date, imageSrc, children, onClick, onEdit }: ArticleCardProps) {
+    const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
+
     return (
         <motion.div
-            whileHover={{ scale: 1.02, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={isLowPowerMode ? undefined : { scale: 1.02, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+            whileTap={isLowPowerMode ? undefined : { scale: 0.98 }}
             onClick={onClick}
             className="group relative flex flex-col md:flex-row gap-6 p-6 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md cursor-pointer transition-colors overflow-hidden"
         >
@@ -74,10 +78,10 @@ export default function ArticleCard({ title, rating, date, imageSrc, children, o
                                 <div
                                     key={i}
                                     className={`w-1.5 h-3 rounded-full mr-0.5 ${i < Math.floor(rating)
-                                            ? "bg-primary"
-                                            : i === Math.floor(rating) && rating % 1 !== 0
-                                                ? "bg-gradient-to-r from-primary to-white/10"
-                                                : "bg-white/10"
+                                        ? "bg-primary"
+                                        : i === Math.floor(rating) && rating % 1 !== 0
+                                            ? "bg-gradient-to-r from-primary to-white/10"
+                                            : "bg-white/10"
                                         }`}
                                 />
                             ))}

@@ -8,10 +8,9 @@ import PageTransition from "@/components/ui/PageTransition";
 import ArticleCard from "@/components/articles/ArticleCard";
 import AddReviewItemModal from "@/components/articles/AddReviewItemModal";
 import AddArticleModal from "@/components/articles/AddArticleModal";
+import ArticlePhotosGallery from "@/components/articles/ArticlePhotosGallery";
 import { useUIStore } from "@/store/uiStore";
 import { supabase } from "@/utils/supabase";
-
-export const dynamic = 'force-dynamic';
 
 interface Article {
     id: string;
@@ -119,8 +118,8 @@ export default function ArticleDetailPage() {
                 <div className="space-y-6">
                     {/* Cover Image */}
                     {article.image_url && (
-                        <div className="w-full aspect-[21/9] rounded-2xl overflow-hidden bg-black/20 shadow-2xl border border-white/10">
-                            <img src={article.image_url} alt={article.title} className="w-full h-full object-cover" />
+                        <div className="w-full rounded-2xl overflow-hidden bg-black/20 shadow-2xl border border-white/10">
+                            <img src={article.image_url} alt={article.title} className="w-full h-auto max-h-[60vh] object-contain mx-auto" />
                         </div>
                     )}
 
@@ -134,12 +133,6 @@ export default function ArticleDetailPage() {
                             <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{article.title}</h1>
                             <span className="text-white/40">{article.date_display}</span>
                         </div>
-                        {article.rating && (
-                            <div className="text-right">
-                                <span className="text-sm text-white/40 block">Rating</span>
-                                <span className="text-3xl font-bold text-primary">{article.rating.toFixed(1)}/10</span>
-                            </div>
-                        )}
                         {/* Edit Button for Main Article */}
                         {isOwner && (
                             <div className="absolute top-0 right-0">
@@ -150,6 +143,11 @@ export default function ArticleDetailPage() {
                                     }}
                                     className="p-3 bg-red-500/80 hover:bg-red-500 text-white rounded-full shadow-lg transition-transform hover:scale-110"
                                     title="Edit Article"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditArticle(article);
+                                        setIsAddArticleOpen(true);
+                                    }}
                                 >
                                     <Pencil size={20} />
                                 </button>
@@ -182,8 +180,6 @@ export default function ArticleDetailPage() {
                                         imageSrc={item.image_url}
                                         onEdit={isOwner ? (e) => {
                                             setEditReviewItem(item);
-                                            // We reuse the AddReviewItemModal but need a way to open it for editing
-                                            // Let's use a separate state or just re-purpose isAddOpen
                                             setIsAddOpen(true);
                                         } : undefined}
                                     >
@@ -213,6 +209,11 @@ export default function ArticleDetailPage() {
                         )}
                     </div>
                 )}
+
+                {/* Article Photos Gallery (Always Show at Bottom) */}
+                <div className="mt-16 pt-8 border-t border-white/10">
+                    <ArticlePhotosGallery articleId={article.id} />
+                </div>
 
                 {/* Modals */}
 

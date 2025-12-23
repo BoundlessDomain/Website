@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Upload, Loader2, Save, Crop as CropIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
