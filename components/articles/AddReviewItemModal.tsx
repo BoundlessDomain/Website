@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Upload, Loader2, Save, Crop as CropIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/utils/supabase";
-import Cropper from "react-easy-crop";
+import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import getCroppedImg from "@/utils/cropImage";
 
 interface AddReviewItemModalProps {
@@ -30,9 +31,9 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
 
     // Cropper State
     const [isCropping, setIsCropping] = useState(false);
-    const [crop, setCrop] = useState({ x: 0, y: 0 });
-    const [zoom, setZoom] = useState(1);
-    const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+    const [crop, setCrop] = useState<Crop>();
+    const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+    const imgRef = useRef<HTMLImageElement>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,8 +67,8 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
             }
             // Reset Cropper
             setIsCropping(false);
-            setZoom(1);
-            setCrop({ x: 0, y: 0 });
+            setCrop(undefined);
+            setCompletedCrop(undefined);
         }
     }, [isOpen, initialData]);
 
@@ -76,19 +77,38 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
             const file = e.target.files[0];
             setImageFile(file);
             setImagePreview(URL.createObjectURL(file));
-            // Automatically start cropping for new images if desired, or let user click crop
-            // For now, let's just show the full image and let user opt-in to crop
         }
     };
 
-    const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
-        setCroppedAreaPixels(croppedAreaPixels);
-    }, []);
+    function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+        const { width, height } = e.currentTarget;
+        // Default to a centered crop if none exists
+        const crop = centerCrop(
+            makeAspectCrop(
+                {
+                    unit: '%',
+                    width: 90,
+                },
+                16 / 9,
+                width,
+                height
+            ),
+            width,
+            height
+        )
+        setCrop(crop);
+    }
 
     const showCroppedImage = async () => {
-        if (imagePreview && croppedAreaPixels) {
+        if (imgRef.current && completedCrop) {
             try {
-                const croppedBlob = await getCroppedImg(imagePreview, croppedAreaPixels);
+                // We need to use valid pixel crop data. 
+                // getCroppedImg expects: imageSrc, pixelCrop, rotation, flip
+                // It might create a new image from scratch using src.
+                // Or we can pass the image reference?
+                // The current utility takes a string URL. Let's keep using imagePreview.
+
+                const croppedBlob = await getCroppedImg(imagePreview as string, completedCrop);
                 if (croppedBlob) {
                     const croppedFile = new File([croppedBlob], "cropped.jpg", { type: "image/jpeg" });
                     setImageFile(croppedFile);
@@ -207,34 +227,24 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
                             {/* Cropping View */}
                             {isCropping && imagePreview ? (
                                 <div className="space-y-4">
-                                    <div className="relative w-full h-[400px] bg-black/50 rounded-xl overflow-hidden border border-white/10">
-                                        <Cropper
-                                            image={imagePreview}
+                                    <div className="relative w-full bg-black/50 rounded-xl overflow-hidden border border-white/10 flex justify-center">
+                                        <ReactCrop
                                             crop={crop}
-                                            zoom={zoom}
-                                            aspect={undefined} // Allow free cropping if needed, or set 16/9. User said "clear out some unnecessary area", so free or generic is good. Let's default to no fixed aspect to maximize freedom, or maybe 16/9 if that's the card style.
-                                            // Actually, ArticleCard is flexible, but cover images usually look best with some consistency. 
-                                            // Let's stick to free form or initial aspect.
-                                            // Setting aspect={16 / 9} forces a shape. 
-                                            // User said "crop icon so i can clear out some uncessary area", implies manual control.
-                                            // I will leave aspect functionality off (allow free crop) so they can trim top/bottom.
-                                            onCropChange={setCrop}
-                                            onCropComplete={onCropComplete}
-                                            onZoomChange={setZoom}
-                                        />
+                                            onChange={(_, percentCrop) => setCrop(percentCrop)}
+                                            onComplete={(c) => setCompletedCrop(c)}
+                                            aspect={undefined} // Free crop
+                                        >
+                                            <img
+                                                ref={imgRef}
+                                                alt="Crop me"
+                                                src={imagePreview}
+                                                onLoad={onImageLoad}
+                                                style={{ maxHeight: '60vh', objectFit: 'contain' }}
+                                            />
+                                        </ReactCrop>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-white/60 text-sm">Zoom</span>
-                                        <input
-                                            type="range"
-                                            value={zoom}
-                                            min={1}
-                                            max={3}
-                                            step={0.1}
-                                            aria-labelledby="Zoom"
-                                            onChange={(e) => setZoom(Number(e.target.value))}
-                                            className="w-full accent-primary"
-                                        />
+                                    <div className="flex justify-between items-center text-white/50 text-sm">
+                                        <p>Drag corners to resize. Drag box to move.</p>
                                     </div>
                                     <div className="flex justify-end gap-3">
                                         <button
