@@ -102,13 +102,19 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
     const showCroppedImage = async () => {
         if (imgRef.current && completedCrop) {
             try {
-                // We need to use valid pixel crop data. 
-                // getCroppedImg expects: imageSrc, pixelCrop, rotation, flip
-                // It might create a new image from scratch using src.
-                // Or we can pass the image reference?
-                // The current utility takes a string URL. Let's keep using imagePreview.
+                // Calculate scale factors
+                const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
+                const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
 
-                const croppedBlob = await getCroppedImg(imagePreview as string, completedCrop);
+                // Scale the crop coordinates to match the natural image size
+                const scaledCrop = {
+                    x: completedCrop.x * scaleX,
+                    y: completedCrop.y * scaleY,
+                    width: completedCrop.width * scaleX,
+                    height: completedCrop.height * scaleY,
+                };
+
+                const croppedBlob = await getCroppedImg(imagePreview as string, scaledCrop);
                 if (croppedBlob) {
                     const croppedFile = new File([croppedBlob], "cropped.jpg", { type: "image/jpeg" });
                     setImageFile(croppedFile);
