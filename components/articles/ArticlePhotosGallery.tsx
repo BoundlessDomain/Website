@@ -97,7 +97,7 @@ export default function ArticlePhotosGallery({ articleId }: ArticlePhotosGallery
         <div className="w-full space-y-6">
             <div className="flex justify-between items-end">
                 <h3 className="text-xl font-bold text-white/80">
-                    Some fun photos I got while writing for this article
+                    Gallery
                 </h3>
 
                 {isOwner && (
