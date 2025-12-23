@@ -1,7 +1,35 @@
 {
     "rewrites": [
         {
-            "source": "/api/(.*)",
+            "source": "/api/health",
+            "destination": "/api/index.py"
+        },
+        {
+            "source": "/api/navigation",
+            "destination": "/api/index.py"
+        },
+        {
+            "source": "/api/seed-defaults",
+            "destination": "/api/index.py"
+        },
+        {
+            "source": "/api/admin/(.*)",
+            "destination": "/api/index.py"
+        },
+        {
+            "source": "/api/verify-owner",
+            "destination": "/api/index.py"
+        },
+        {
+            "source": "/api/gallery(.*)",
+            "destination": "/api/index.py"
+        },
+        {
+            "source": "/api/proxy",
+            "destination": "/api/index.py"
+        },
+        {
+            "source": "/api/feedback",
             "destination": "/api/index.py"
         }
     ]
