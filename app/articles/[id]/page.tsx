@@ -172,7 +172,6 @@ export default function ArticleDetailPage() {
                                     <ArticleCard
                                         key={item.id}
                                         title={item.name}
-                                        rating={item.rating}
                                         date={item.date_display}
                                         imageSrc={item.image_url}
                                         onEdit={isOwner ? (e) => {

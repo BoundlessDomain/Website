@@ -6,7 +6,6 @@ import { Pencil } from "lucide-react";
 
 interface ArticleCardProps {
     title: string;
-    rating: number; // Out of 10
     date: string;
     imageSrc?: string;
     children: ReactNode;
@@ -17,7 +16,7 @@ interface ArticleCardProps {
 
 import { useUIStore } from "@/store/uiStore";
 
-export default function ArticleCard({ title, rating, date, imageSrc, children, onClick, onEdit }: ArticleCardProps) {
+export default function ArticleCard({ title, date, imageSrc, children, onClick, onEdit }: ArticleCardProps) {
     const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
 
     return (
@@ -69,26 +68,6 @@ export default function ArticleCard({ title, rating, date, imageSrc, children, o
                         {date}
                     </span>
                 </div>
-
-                {/* Rating (Only show if > 0) */}
-                {rating > 0 && (
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="flex">
-                            {[...Array(10)].map((_, i) => (
-                                <div
-                                    key={i}
-                                    className={`w-1.5 h-3 rounded-full mr-0.5 ${i < Math.floor(rating)
-                                        ? "bg-primary"
-                                        : i === Math.floor(rating) && rating % 1 !== 0
-                                            ? "bg-gradient-to-r from-primary to-white/10"
-                                            : "bg-white/10"
-                                        }`}
-                                />
-                            ))}
-                        </div>
-                        <span className="text-sm font-bold text-primary">{rating.toFixed(1)}/10</span>
-                    </div>
-                )}
 
                 {/* Body Text */}
                 <div className="text-white/70 leading-relaxed text-sm md:text-base line-clamp-4 md:line-clamp-none">

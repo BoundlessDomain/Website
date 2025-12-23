@@ -35,7 +35,7 @@ export default function ArticlesPage() {
                 .from('articles')
                 .select('*')
                 .order('created_at', { ascending: false });
-            
+
             if (error) throw error;
             setArticles(data || []);
         } catch (error) {
@@ -52,7 +52,7 @@ export default function ArticlesPage() {
     return (
         <PageTransition icon={FileText} title="ARTICLES" quadrant="top-left">
             <div className="space-y-12 pb-24">
-                
+
 
                 {/* Articles List */}
                 <div className="space-y-6 min-h-[200px]">
@@ -65,7 +65,6 @@ export default function ArticlesPage() {
                             <ArticleCard
                                 key={article.id}
                                 title={article.title}
-                                rating={article.type === 'review_collection' ? 0 : (article.rating || 0)}
                                 date={article.date_display}
                                 imageSrc={article.image_url}
                                 onClick={() => router.push(`/articles/${article.id}`)}
@@ -83,7 +82,7 @@ export default function ArticlesPage() {
                 {/* Admin / Owner Controls */}
                 {isOwner && (
                     <div className="fixed bottom-8 right-8 z-50">
-                        <button 
+                        <button
                             className="flex items-center gap-2 px-6 py-3 bg-primary text-black font-bold rounded-full 
                                      shadow-[0_0_20px_var(--primary-glow)] hover:scale-105 active:scale-95 transition-all"
                             onClick={() => setIsModalOpen(true)}
@@ -95,8 +94,8 @@ export default function ArticlesPage() {
                 )}
 
                 {/* Add Modal */}
-                <AddArticleModal 
-                    isOpen={isModalOpen} 
+                <AddArticleModal
+                    isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onSuccess={fetchArticles}
                 />

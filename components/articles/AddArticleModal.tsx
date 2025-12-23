@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, Upload, Loader2, Save } from "lucide-react";
+import { X, Upload, Loader2, Save, Trash2, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/utils/supabase";
 
@@ -15,7 +15,7 @@ interface AddArticleModalProps {
 export default function AddArticleModal({ isOpen, onClose, onSuccess, initialData }: AddArticleModalProps) {
     const [title, setTitle] = useState("");
     const [type, setType] = useState<"standard" | "review_collection">("standard");
-    const [rating, setRating] = useState<number | ''>(8); // Allow empty for typing
+    // Rating removed as per request
 
     // Date State
     const today = new Date();
@@ -29,17 +29,20 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess, initialDat
     const [loading, setLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Pre-fill data if editing
-    // Note: useEffect below handles synchronization better, this useState initializer only runs once.
-    // We can keep it or rely on useEffect.
+    // Delete State
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteTitle, setDeleteTitle] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Reset when modal opens/closes or initialData changes
     useEffect(() => {
         if (isOpen) {
+            setShowDeleteConfirm(false);
+            setDeleteTitle("");
+
             if (initialData) {
                 setTitle(initialData.title);
                 setType(initialData.type || "standard");
-                setRating(initialData.rating || 8);
                 setContent(initialData.content);
                 setImagePreview(initialData.image_url);
 
@@ -57,7 +60,6 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess, initialDat
                 setContent("");
                 setImageFile(null);
                 setImagePreview(null);
-                setRating(8);
                 setType("standard");
                 setDay(today.getDate().toString().padStart(2, '0'));
                 setMonth((today.getMonth() + 1).toString().padStart(2, '0'));
@@ -72,6 +74,43 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess, initialDat
             const file = e.target.files[0];
             setImageFile(file);
             setImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleDelete = async () => {
+        if (deleteTitle !== initialData?.title) return;
+        setIsDeleting(true);
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) throw new Error("Not authenticated");
+            const token = session.access_token;
+
+            // Using DELETE method with body or query param. 
+            // We'll pass ID in body as designed in route.ts, but standard fetch DELETE supports body in some contexts.
+            // Safe bet: JSON body.
+            const res = await fetch('/api/articles', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ id: initialData.id })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Failed to delete article");
+            }
+
+            onSuccess();
+            onClose();
+
+        } catch (error: any) {
+            console.error("Delete Error:", error);
+            alert("Failed to delete: " + error.message);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -122,7 +161,7 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess, initialDat
                 date_display: dateDisplay,
                 image_url: imageUrl,
                 type,
-                rating: rating === '' ? 0 : Number(rating)
+                // rating removed
             };
 
             if (initialData) {
@@ -168,8 +207,55 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess, initialDat
                         initial={{ scale: 0.95, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.95, opacity: 0 }}
-                        className="w-full max-w-2xl bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                        className="w-full max-w-2xl bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative"
                     >
+                        {/* Delete Confirmation Overlay */}
+                        <AnimatePresence>
+                            {showDeleteConfirm && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="absolute inset-0 z-50 bg-black/90 backdrop-blur flex items-center justify-center p-8"
+                                >
+                                    <div className="w-full max-w-md space-y-6 text-center">
+                                        <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto text-red-500">
+                                            <AlertTriangle size={32} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-white mb-2">Delete Article?</h3>
+                                            <p className="text-white/60">
+                                                This action cannot be undone. Please type <span className="text-white font-mono font-bold">{initialData?.title}</span> to confirm.
+                                            </p>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={deleteTitle}
+                                            onChange={(e) => setDeleteTitle(e.target.value)}
+                                            placeholder="Type article name..."
+                                            className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white text-center focus:outline-none focus:border-red-500 transition-colors"
+                                        />
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setShowDeleteConfirm(false)}
+                                                className="flex-1 px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleDelete}
+                                                disabled={deleteTitle !== initialData?.title || isDeleting}
+                                                className="flex-1 px-4 py-3 rounded-lg bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-colors"
+                                            >
+                                                {isDeleting ? "Deleting..." : "Delete Forever"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+
                         <div className="flex justify-between items-center p-6 border-b border-white/10 bg-white/5">
                             <h2 className="text-xl font-bold text-white">{initialData ? "Edit Article" : "Add New Article"}</h2>
                             <button onClick={onClose} className="text-white/50 hover:text-white transition-colors">
@@ -206,24 +292,8 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess, initialDat
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    {/* Rating - Only for Standard */}
-                                    {type === 'standard' && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-white/60 mb-1">Rating (1-10)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="10"
-                                                step="0.1"
-                                                value={rating}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    setRating(val === '' ? '' : parseFloat(val));
-                                                }}
-                                                className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
-                                            />
-                                        </div>
-                                    )}
+                                    {/* Rating REMOVED */}
+
                                     {/* Date Selection (DD-MM-YYYY) */}
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-white/60 mb-1">Date (DD-MM-YYYY)</label>
@@ -307,30 +377,46 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess, initialDat
                         </div>
 
                         {/* Footer */}
-                        <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
-                            <button
-                                onClick={onClose}
-                                className="px-5 py-2.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all font-medium"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSubmit}
-                                disabled={loading}
-                                className="px-6 py-2.5 rounded-lg bg-primary text-black font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {loading ? (
-                                    <>
-                                        <Loader2 size={18} className="animate-spin" />
-                                        Saving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save size={18} />
-                                        {initialData ? "Update Article" : "Publish Article"}
-                                    </>
+                        <div className="p-6 border-t border-white/10 bg-white/5 flex justify-between gap-3">
+                            {/* Delete Button (Left) */}
+                            <div>
+                                {initialData && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDeleteConfirm(true)}
+                                        className="px-4 py-2.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all font-bold flex items-center gap-2"
+                                        title="Delete Article"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
                                 )}
-                            </button>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={onClose}
+                                    className="px-5 py-2.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={loading}
+                                    className="px-6 py-2.5 rounded-lg bg-primary text-black font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save size={18} />
+                                            {initialData ? "Update Article" : "Publish Article"}
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 </motion.div>
