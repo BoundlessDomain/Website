@@ -1,5 +1,13 @@
 # Changelog
 
+## V3.5.0 - Article Management & Security Improvements
+- **Feature:** Enhanced Article Management
+  - Implemented secure delete functionality with name confirmation.
+  - Removed legacy rating system for a cleaner interface.
+- **Fix:** Photo Upload Authorization
+  - Resolved 403 Forbidden errors for admin uploads.
+  - Standardized server-side `is_admin` checks to rely on database state rather than hardcoded emails.
+
 ## V3.4.0 - Gallery & Layout Enhancements
 - **Feature:** Improved **Album Display** with masonry-like dynamic height scaling to prevent cropping.
 - **Feature:** Updated **Gallery UI** with 4-column grid and dynamic section spacing.
