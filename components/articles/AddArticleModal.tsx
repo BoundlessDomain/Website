@@ -86,16 +86,13 @@ export default function AddArticleModal({ isOpen, onClose, onSuccess, initialDat
             if (!session) throw new Error("Not authenticated");
             const token = session.access_token;
 
-            // Using DELETE method with body or query param. 
-            // We'll pass ID in body as designed in route.ts, but standard fetch DELETE supports body in some contexts.
-            // Safe bet: JSON body.
-            const res = await fetch('/api/articles', {
+            // Using DELETE method with Query Params (Safer for proxies/Next.js)
+            const res = await fetch(`/api/articles?id=${initialData.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ id: initialData.id })
+                }
             });
 
             if (!res.ok) {
