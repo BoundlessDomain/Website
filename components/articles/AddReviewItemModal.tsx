@@ -1,9 +1,9 @@
-"use client";
-
-import { useState, useRef, useEffect } from "react";
-import { X, Upload, Loader2, Save } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { X, Upload, Loader2, Save, Crop as CropIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/utils/supabase";
+import Cropper from "react-easy-crop";
+import getCroppedImg from "@/utils/cropImage";
 
 interface AddReviewItemModalProps {
     isOpen: boolean;
@@ -27,6 +27,13 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+
+    // Cropper State
+    const [isCropping, setIsCropping] = useState(false);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Pre-fill / Reset Data
@@ -34,7 +41,7 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
         if (isOpen) {
             if (initialData) {
                 setName(initialData.name);
-                setRating(initialData.rating); // numeric 4.5 is fine here
+                setRating(initialData.rating);
                 setContent(initialData.content);
                 setImagePreview(initialData.image_url);
 
@@ -57,6 +64,10 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
                 setMonth((today.getMonth() + 1).toString().padStart(2, '0'));
                 setYear(today.getFullYear().toString());
             }
+            // Reset Cropper
+            setIsCropping(false);
+            setZoom(1);
+            setCrop({ x: 0, y: 0 });
         }
     }, [isOpen, initialData]);
 
@@ -65,6 +76,28 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
             const file = e.target.files[0];
             setImageFile(file);
             setImagePreview(URL.createObjectURL(file));
+            // Automatically start cropping for new images if desired, or let user click crop
+            // For now, let's just show the full image and let user opt-in to crop
+        }
+    };
+
+    const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+    }, []);
+
+    const showCroppedImage = async () => {
+        if (imagePreview && croppedAreaPixels) {
+            try {
+                const croppedBlob = await getCroppedImg(imagePreview, croppedAreaPixels);
+                if (croppedBlob) {
+                    const croppedFile = new File([croppedBlob], "cropped.jpg", { type: "image/jpeg" });
+                    setImageFile(croppedFile);
+                    setImagePreview(URL.createObjectURL(croppedBlob));
+                    setIsCropping(false);
+                }
+            } catch (e) {
+                console.error(e);
+            }
         }
     };
 
@@ -80,6 +113,7 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
             const token = session.access_token;
 
             // 1. Upload Image (Server-side via API)
+            // If we have a new file (from upload OR crop), upload it
             if (imageFile) {
                 const formData = new FormData();
                 formData.append('file', imageFile);
@@ -170,97 +204,172 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/20">
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                {/* Name */}
-                                <div>
-                                    <label className="block text-sm font-medium text-white/60 mb-1">Item Name</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
-                                        placeholder="e.g. Fiji Water"
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-white/60 mb-1">Rating (1-10)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            max="10"
-                                            step="0.1"
-                                            value={rating}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                setRating(val === '' ? '' : parseFloat(val));
-                                            }}
-                                            className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
+                            {/* Cropping View */}
+                            {isCropping && imagePreview ? (
+                                <div className="space-y-4">
+                                    <div className="relative w-full h-[400px] bg-black/50 rounded-xl overflow-hidden border border-white/10">
+                                        <Cropper
+                                            image={imagePreview}
+                                            crop={crop}
+                                            zoom={zoom}
+                                            aspect={undefined} // Allow free cropping if needed, or set 16/9. User said "clear out some unnecessary area", so free or generic is good. Let's default to no fixed aspect to maximize freedom, or maybe 16/9 if that's the card style.
+                                            // Actually, ArticleCard is flexible, but cover images usually look best with some consistency. 
+                                            // Let's stick to free form or initial aspect.
+                                            // Setting aspect={16 / 9} forces a shape. 
+                                            // User said "crop icon so i can clear out some uncessary area", implies manual control.
+                                            // I will leave aspect functionality off (allow free crop) so they can trim top/bottom.
+                                            onCropChange={setCrop}
+                                            onCropComplete={onCropComplete}
+                                            onZoomChange={setZoom}
                                         />
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-white/60 mb-1">Date (DD-MM-YYYY)</label>
-                                        <div className="flex gap-2">
-                                            {/* Day */}
-                                            <select
-                                                value={day}
-                                                onChange={(e) => setDay(e.target.value)}
-                                                className="w-1/3 px-2 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors appearance-none"
-                                            >
-                                                {Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0')).map(d => (
-                                                    <option key={d} value={d} className="bg-black">{d}</option>
-                                                ))}
-                                            </select>
-                                            {/* Month */}
-                                            <select
-                                                value={month}
-                                                onChange={(e) => setMonth(e.target.value)}
-                                                className="w-1/3 px-2 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors appearance-none"
-                                            >
-                                                {Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0')).map(m => (
-                                                    <option key={m} value={m} className="bg-black">{m}</option>
-                                                ))}
-                                            </select>
-                                            {/* Year */}
-                                            <input
-                                                type="number"
-                                                value={year}
-                                                onChange={(e) => setYear(e.target.value)}
-                                                className="w-1/3 px-2 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
-                                                min="2000"
-                                            />
-                                        </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-white/60 text-sm">Zoom</span>
+                                        <input
+                                            type="range"
+                                            value={zoom}
+                                            min={1}
+                                            max={3}
+                                            step={0.1}
+                                            aria-labelledby="Zoom"
+                                            onChange={(e) => setZoom(Number(e.target.value))}
+                                            className="w-full accent-primary"
+                                        />
+                                    </div>
+                                    <div className="flex justify-end gap-3">
+                                        <button
+                                            onClick={() => setIsCropping(false)}
+                                            className="px-4 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={showCroppedImage}
+                                            className="px-4 py-2 rounded-lg bg-primary text-black font-bold hover:scale-105 transition-transform"
+                                        >
+                                            Apply Crop
+                                        </button>
                                     </div>
                                 </div>
+                            ) : (
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    {/* Name */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-white/60 mb-1">Item Name</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
+                                            placeholder="e.g. Fiji Water"
+                                        />
+                                    </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-white/60 mb-1">Review</label>
-                                    <textarea
-                                        required
-                                        rows={4}
-                                        value={content}
-                                        onChange={(e) => setContent(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors resize-none"
-                                        placeholder="Review text..."
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-white/60 mb-2">Image</label>
-                                    <div
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="relative w-full aspect-video rounded-xl border-2 border-dashed border-white/10 hover:border-primary/50 transition-colors flex flex-col items-center justify-center cursor-pointer overflow-hidden bg-black/20 group"
-                                    >
-                                        {imagePreview ? (
-                                            <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="flex flex-col items-center text-white/40">
-                                                <Upload size={24} className="mb-2" />
-                                                <span className="text-sm">Upload Image</span>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-white/60 mb-1">Rating (1-10)</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="10"
+                                                step="0.1"
+                                                value={rating}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setRating(val === '' ? '' : parseFloat(val));
+                                                }}
+                                                className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-white/60 mb-1">Date (DD-MM-YYYY)</label>
+                                            <div className="flex gap-2">
+                                                {/* Day */}
+                                                <select
+                                                    value={day}
+                                                    onChange={(e) => setDay(e.target.value)}
+                                                    className="w-1/3 px-2 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors appearance-none"
+                                                >
+                                                    {Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0')).map(d => (
+                                                        <option key={d} value={d} className="bg-black">{d}</option>
+                                                    ))}
+                                                </select>
+                                                {/* Month */}
+                                                <select
+                                                    value={month}
+                                                    onChange={(e) => setMonth(e.target.value)}
+                                                    className="w-1/3 px-2 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors appearance-none"
+                                                >
+                                                    {Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0')).map(m => (
+                                                        <option key={m} value={m} className="bg-black">{m}</option>
+                                                    ))}
+                                                </select>
+                                                {/* Year */}
+                                                <input
+                                                    type="number"
+                                                    value={year}
+                                                    onChange={(e) => setYear(e.target.value)}
+                                                    className="w-1/3 px-2 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
+                                                    min="2000"
+                                                />
                                             </div>
-                                        )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-white/60 mb-1">Review</label>
+                                        <textarea
+                                            required
+                                            rows={4}
+                                            value={content}
+                                            onChange={(e) => setContent(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors resize-none"
+                                            placeholder="Review text..."
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-white/60 mb-2">Image</label>
+                                        <div className="relative w-full rounded-xl border-2 border-dashed border-white/10 hover:border-primary/50 transition-colors flex flex-col items-center justify-center overflow-hidden bg-black/20 group">
+                                            {/* Changed container to NOT enforce aspect ratio, allows full height view */}
+                                            {imagePreview ? (
+                                                <div className="relative w-full">
+                                                    <img src={imagePreview} alt="Preview" className="w-full h-auto max-h-[400px] object-contain" />
+
+                                                    {/* Controls Overlay */}
+                                                    <div className="absolute top-2 right-2 flex gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsCropping(true)}
+                                                            className="p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-colors"
+                                                            title="Crop Image"
+                                                        >
+                                                            <CropIcon size={20} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setImageFile(null);
+                                                                setImagePreview(null);
+                                                            }}
+                                                            className="p-2 bg-black/60 hover:bg-red-500/80 text-white rounded-full backdrop-blur-md transition-colors"
+                                                            title="Remove Image"
+                                                        >
+                                                            <X size={20} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    className="w-full py-12 flex flex-col items-center cursor-pointer text-white/40 hover:text-white/60 transition-colors"
+                                                >
+                                                    <Upload size={24} className="mb-2" />
+                                                    <span className="text-sm">Upload Image</span>
+                                                </div>
+                                            )}
+                                        </div>
                                         <input
                                             ref={fileInputRef}
                                             type="file"
@@ -269,16 +378,18 @@ export default function AddReviewItemModal({ isOpen, onClose, onSuccess, article
                                             onChange={handleImageChange}
                                         />
                                     </div>
-                                </div>
-                            </form>
+                                </form>
+                            )}
                         </div>
 
-                        <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
-                            <button onClick={onClose} className="px-5 py-2.5 rounded-lg text-white/70 hover:text-white transition-all">Cancel</button>
-                            <button onClick={handleSubmit} disabled={loading} className="px-6 py-2.5 rounded-lg bg-primary text-black font-bold hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
-                                {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> {initialData ? "Update Item" : "Add Item"}</>}
-                            </button>
-                        </div>
+                        {!isCropping && (
+                            <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
+                                <button onClick={onClose} className="px-5 py-2.5 rounded-lg text-white/70 hover:text-white transition-all">Cancel</button>
+                                <button onClick={handleSubmit} disabled={loading} className="px-6 py-2.5 rounded-lg bg-primary text-black font-bold hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+                                    {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> {initialData ? "Update Item" : "Add Item"}</>}
+                                </button>
+                            </div>
+                        )}
                     </motion.div>
                 </motion.div>
             )}
