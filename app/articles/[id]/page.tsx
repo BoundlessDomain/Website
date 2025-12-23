@@ -8,7 +8,7 @@ import PageTransition from "@/components/ui/PageTransition";
 import ArticleCard from "@/components/articles/ArticleCard";
 import AddReviewItemModal from "@/components/articles/AddReviewItemModal";
 import AddArticleModal from "@/components/articles/AddArticleModal";
-import ArticlePhotosGallery from "@/components/articles/ArticlePhotosGallery";
+
 import { useUIStore } from "@/store/uiStore";
 import { supabase } from "@/utils/supabase";
 
@@ -137,10 +137,7 @@ export default function ArticleDetailPage() {
                         {isOwner && (
                             <div className="absolute top-0 right-0">
                                 <button
-                                    onClick={() => {
-                                        setEditArticle(article);
-                                        setIsAddArticleOpen(true);
-                                    }}
+
                                     className="p-3 bg-red-500/80 hover:bg-red-500 text-white rounded-full shadow-lg transition-transform hover:scale-110"
                                     title="Edit Article"
                                     onClick={(e) => {
@@ -210,10 +207,7 @@ export default function ArticleDetailPage() {
                     </div>
                 )}
 
-                {/* Article Photos Gallery (Always Show at Bottom) */}
-                <div className="mt-16 pt-8 border-t border-white/10">
-                    <ArticlePhotosGallery articleId={article.id} />
-                </div>
+
 
                 {/* Modals */}
 
