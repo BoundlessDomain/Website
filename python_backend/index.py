@@ -27,7 +27,7 @@ try:
         from db import get_supabase
     except ImportError:
         # Fallback for some Vercel environments where .api might be needed
-        from api.db import get_supabase
+        from python_backend.db import get_supabase
 except Exception as e:
     STARTUP_ERROR = f"Import Error: {e}\n{traceback.format_exc()}"
     print(STARTUP_ERROR)
