@@ -2,35 +2,35 @@
     "rewrites": [
         {
             "source": "/api/health",
-            "destination": "/python_backend/index.py"
+            "destination": "/api/index.py"
         },
         {
             "source": "/api/navigation",
-            "destination": "/python_backend/index.py"
+            "destination": "/api/index.py"
         },
         {
             "source": "/api/seed-defaults",
-            "destination": "/python_backend/index.py"
+            "destination": "/api/index.py"
         },
         {
             "source": "/api/admin/(.*)",
-            "destination": "/python_backend/index.py"
+            "destination": "/api/index.py"
         },
         {
             "source": "/api/verify-owner",
-            "destination": "/python_backend/index.py"
+            "destination": "/api/index.py"
         },
         {
             "source": "/api/gallery(.*)",
-            "destination": "/python_backend/index.py"
+            "destination": "/api/index.py"
         },
         {
             "source": "/api/proxy",
-            "destination": "/python_backend/index.py"
+            "destination": "/api/index.py"
         },
         {
             "source": "/api/feedback",
-            "destination": "/python_backend/index.py"
+            "destination": "/api/index.py"
         }
     ]
 }

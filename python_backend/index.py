@@ -83,8 +83,20 @@ def process_url(url):
         return ""
     if url.startswith("http"):
         return url
-    # return f"https://[YOUR_PROJECT].supabase.co/storage/v1/object/public/gallery/{url}"
-    return url 
+    
+    # Handle relative paths (e.g. from storage bucket)
+    # Use environment variable or fallback to known project URL
+    base_url = os.environ.get("SUPABASE_URL") or "https://jywsejauxoxnwndocyee.supabase.co"
+    if base_url.endswith("/"):
+        base_url = base_url[:-1]
+        
+    clean_path = url.lstrip("/")
+    
+    # Check if it already has the storage prefix (unlikely for relative paths but possible)
+    if "storage/v1/object/public" in clean_path:
+        return f"{base_url}/{clean_path}"
+        
+    return f"{base_url}/storage/v1/object/public/gallery/{clean_path}" 
 
 # --- Endpoints ---
 
