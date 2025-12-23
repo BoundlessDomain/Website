@@ -65,7 +65,7 @@ export default function ArticlesPage() {
                             <ArticleCard
                                 key={article.id}
                                 title={article.title}
-                                rating={article.rating || 0}
+                                rating={article.type === 'review_collection' ? 0 : (article.rating || 0)}
                                 date={article.date_display}
                                 imageSrc={article.image_url}
                                 onClick={() => router.push(`/articles/${article.id}`)}

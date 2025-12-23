@@ -42,18 +42,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
         if (authError || !user) {
+            console.error("[Upload] Auth Failed:", authError);
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Check Admin
+        // Check Admin (DB Check)
         const { data: userData, error: userError } = await supabaseAdmin
-            .from('users')
+            .from('profiles')
             .select('is_admin')
             .eq('id', user.id)
             .single();
 
         if (userError || !userData?.is_admin) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            console.error(`[Upload] Forbidden. User: ${user.email} (${user.id}). Profile Admin: ${userData?.is_admin}`);
+            return NextResponse.json({
+                error: 'Forbidden',
+                details: 'User not authorized as Admin.'
+            }, { status: 403 });
         }
 
         const formData = await req.formData();
