@@ -46,7 +46,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
         // Auth Check
+        // Auth Check
         const authHeader = req.headers.get('Authorization');
+        console.log(`[PhotoUpload] Auth Header Present: ${!!authHeader}`); // Debug log
+
         if (!authHeader) {
             console.warn("[PhotoUpload] Missing Auth Header");
             return NextResponse.json({ error: 'Unauthorized: Missing Header' }, { status: 401 });
@@ -56,7 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
         if (authError || !user) {
-            console.error("[PhotoUpload] Auth Failed:", authError);
+            console.error("[PhotoUpload] Auth Failed - getUser error:", authError);
             return NextResponse.json({ error: 'Unauthorized: Invalid Token' }, { status: 401 });
         }
 
@@ -69,13 +72,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             .eq('id', user.id)
             .single();
 
-        console.log(`[PhotoUpload] Admin Check for ${user.id}:`, userData, userError);
+        console.log(`[PhotoUpload] Admin DB Result for ${user.id}:`, userData, "Error:", userError);
 
         if (userError || !userData?.is_admin) {
-            console.error(`[PhotoUpload] Forbidden. Profile Admin: ${userData?.is_admin}. Error: ${userError?.message}`);
+            console.error(`[PhotoUpload] Forbidden. userData: ${JSON.stringify(userData)}, error: ${JSON.stringify(userError)}`);
+            // Explicitly returning JSON to avoid "Unexpected token F" client error
             return NextResponse.json({
                 error: 'Forbidden',
-                details: 'User not authorized as Admin.'
+                message: 'User is not an admin in profiles table.',
+                debug_user_id: user.id
             }, { status: 403 });
         }
 
