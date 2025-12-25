@@ -60,7 +60,8 @@ const ZzzParticles = React.memo(function ZzzParticles() {
 const SantaHat = () => (
     <group position={[0, 0.45, 0]}>
         {/* White Trim */}
-        <mesh position={[0, 0, 0]}>
+        {/* White Trim */}
+        <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <torusGeometry args={[0.6, 0.15, 16, 32]} />
             <meshStandardMaterial color="#ffffff" roughness={0.5} />
         </mesh>
@@ -398,7 +399,7 @@ export default function Robot({ layoutMode = 'wide', theme }: RobotProps) {
                 </group>
                 <mesh position={[0, -0.2, 0.46]}>
                     <planeGeometry args={[0.6, 0.15]} />
-                    <meshStandardMaterial color="#222" />
+                    <meshStandardMaterial color="#444444" emissive="#222222" emissiveIntensity={0.5} />
                 </mesh>
             </group>
 
