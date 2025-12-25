@@ -8,9 +8,10 @@ import Robot from "./Robot";
 // Add props interface
 interface RobotSceneProps {
     layoutMode: 'mobile' | 'narrow' | 'wide';
+    theme: string;
 }
 
-export default function RobotScene({ layoutMode }: RobotSceneProps) {
+export default function RobotScene({ layoutMode, theme }: RobotSceneProps) {
     const [eventSource, setEventSource] = useState<HTMLElement | undefined>(undefined);
 
     useEffect(() => {
@@ -54,7 +55,7 @@ export default function RobotScene({ layoutMode }: RobotSceneProps) {
 
                 {/* Robot with Layout-based Position */}
                 <group position={robotPos}>
-                    <Robot layoutMode={layoutMode} />
+                    <Robot layoutMode={layoutMode} theme={theme} />
                 </group>
 
                 {/* Contact Shadows instead of Mesh Floor */}

@@ -23,6 +23,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const saved = localStorage.getItem("theme") as ThemeKey;
         if (saved && themes[saved]) {
             setThemeState(saved);
+        } else {
+            // Check for Seasonal Default (Christmas: Dec 1-25)
+            const now = new Date();
+            const month = now.getMonth(); // 0-indexed (11 is Dec)
+            const date = now.getDate();
+            if (month === 11 && date >= 1 && date <= 25) {
+                setThemeState('christmas');
+            }
         }
         setMounted(true);
 

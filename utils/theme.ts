@@ -68,6 +68,20 @@ export const themes = {
             "robot-details": "#38bdf8", // Sky
             "robot-metal": "#94a3b8",  // Slate-400
         }
+    },
+    christmas: {
+        label: "Christmas",
+        colors: {
+            primary: "#ef4444",        // Red-500
+            "primary-glow": "rgba(239,68,68,0.5)",
+            "primary-text": "#fca5a5", // Red-300
+            secondary: "#16a34a",      // Green-600
+            "secondary-dark": "#14532d", // Green-900
+            background: "#0f172a",     // Slate-900 (Night Sky)
+            "robot-body": "#ef4444",   // Red Suit
+            "robot-details": "#ffffff", // White Trim
+            "robot-metal": "#e2e8f0",  // Slate-200 (Silver/Snow)
+        }
     }
 };
 

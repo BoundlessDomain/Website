@@ -12,9 +12,28 @@ export default function SettingsMenu() {
     const [isOpen, setIsOpen] = useState(false);
     const [showThemes, setShowThemes] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [christmasBadge, setChristmasBadge] = useState(false);
 
     // HYDRATION FIX: Wait for mount to avoid mismatch on persisted store values
-    useEffect(() => setMounted(true), []);
+    useEffect(() => {
+        setMounted(true);
+        // Christmas Badge Logic (Dec 1 - Dec 25)
+        const now = new Date();
+        const year = now.getFullYear();
+        const isChristmasTime = now.getMonth() === 11 && now.getDate() <= 25;
+        const hasSeen = localStorage.getItem(`seen_christmas_theme_${year}`);
+
+        if (isChristmasTime && !hasSeen) {
+            setChristmasBadge(true);
+        }
+    }, []);
+
+    const markSeen = () => {
+        if (!christmasBadge) return;
+        const year = new Date().getFullYear();
+        localStorage.setItem(`seen_christmas_theme_${year}`, 'true');
+        setChristmasBadge(false);
+    };
 
     const { theme, setTheme } = useTheme();
     const isLowPowerMode = useUIStore((state) => state.isLowPowerMode);
@@ -31,7 +50,7 @@ export default function SettingsMenu() {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={clsx(
-                    "p-3 rounded-full bg-black/40 backdrop-blur-md border border-primary/30",
+                    "p-3 rounded-full bg-black/40 backdrop-blur-md border border-primary/30 relative",
                     "hover:bg-primary/20 hover:border-primary hover:shadow-[0_0_15px_var(--primary-glow)]",
                     "transition-all duration-300 group"
                 )}
@@ -43,6 +62,12 @@ export default function SettingsMenu() {
                         isOpen && "rotate-90 text-white"
                     )}
                 />
+                {/* Outer Badge */}
+                {christmasBadge && !isOpen && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center bg-red-600 border border-black rounded-full shadow-md animate-bounce">
+                        <span className="text-white text-[10px] font-bold">!</span>
+                    </div>
+                )}
             </button>
 
             {/* Dropdown */}
@@ -120,7 +145,10 @@ export default function SettingsMenu() {
                                 {/* Theme Menu Trigger (Hover) */}
                                 <div
                                     className="relative"
-                                    onMouseEnter={() => setShowThemes(true)}
+                                    onMouseEnter={() => {
+                                        setShowThemes(true);
+                                        markSeen();
+                                    }}
                                     onMouseLeave={() => setShowThemes(false)}
                                 >
                                     <button className="w-full flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 hover:border-primary/50 transition-all group">
@@ -128,7 +156,15 @@ export default function SettingsMenu() {
                                             <Palette size={18} className="text-primary group-hover:text-white transition-colors" />
                                             <span className="text-sm font-bold text-white">Themes</span>
                                         </div>
-                                        <ChevronLeft size={16} className="text-white/50 group-hover:-translate-x-1 transition-transform" />
+                                        <div className="flex items-center gap-2">
+                                            {/* Inner Badge */}
+                                            {christmasBadge && (
+                                                <div className="w-4 h-4 flex items-center justify-center bg-red-600 rounded-full animate-pulse">
+                                                    <span className="text-white text-[10px] font-bold">!</span>
+                                                </div>
+                                            )}
+                                            <ChevronLeft size={16} className="text-white/50 group-hover:-translate-x-1 transition-transform" />
+                                        </div>
                                     </button>
 
                                     {/* Nested Theme Menu (Files out to the LEFT) */}

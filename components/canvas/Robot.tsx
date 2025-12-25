@@ -56,11 +56,33 @@ const ZzzParticles = React.memo(function ZzzParticles() {
     );
 });
 
+// --- SANTA HAT COMPONENT ---
+const SantaHat = () => (
+    <group position={[0, 0.45, 0]}>
+        {/* White Trim */}
+        <mesh position={[0, 0, 0]}>
+            <torusGeometry args={[0.6, 0.15, 16, 32]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.5} />
+        </mesh>
+        {/* Red Cone Body */}
+        <mesh position={[0, 0.6, -0.1]} rotation={[-0.2, 0, 0]}>
+            <coneGeometry args={[0.55, 1.2, 32]} />
+            <meshStandardMaterial color="#ef4444" roughness={0.3} />
+        </mesh>
+        {/* White Pom-Pom */}
+        <mesh position={[0, 1.2, -0.25]} rotation={[-0.2, 0, 0]}>
+            <sphereGeometry args={[0.15]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.5} />
+        </mesh>
+    </group>
+);
+
 interface RobotProps {
     layoutMode?: 'mobile' | 'narrow' | 'wide';
+    theme?: string;
 }
 
-export default function Robot({ layoutMode = 'wide' }: RobotProps) {
+export default function Robot({ layoutMode = 'wide', theme }: RobotProps) {
     const headRef = useRef<Group>(null);
     const leftShoulderRef = useRef<Group>(null);
     const leftElbowRef = useRef<Group>(null);
@@ -353,6 +375,7 @@ export default function Robot({ layoutMode = 'wide' }: RobotProps) {
                     <boxGeometry args={[1.2, 0.8, 0.9]} />
                     <meshStandardMaterial color="#a855f7" roughness={0.2} metalness={0.9} />
                 </mesh>
+                {theme === 'christmas' && <SantaHat />}
                 <group position={[-0.3, 0.1, 0.46]}>
                     <mesh ref={leftEyeRef}>
                         <sphereGeometry args={[0.15, 16, 16]} />

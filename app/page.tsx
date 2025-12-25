@@ -45,7 +45,7 @@ export default function Home() {
             className="relative w-full h-screen min-h-[600px] overflow-hidden"
         >
             <div className="absolute top-0 left-0 w-full h-full z-0">
-                <RobotScene layoutMode={layoutMode} />
+                <RobotScene layoutMode={layoutMode} theme={theme} />
             </div>
             <NavigationMenu layoutMode={layoutMode} />
         </main>
