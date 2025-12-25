@@ -1,5 +1,14 @@
 # Changelog
 
+## V3.5.2 - Annual Christmas Update
+- **Feature:** Added **Christmas Theme** presets (snowy background, festive robot).
+- **Feature:** Implemented **Seasonal Theme Logic**:
+  - Automatically defaults to `christmas` theme for new visitors between Dec 1st - Dec 25th.
+  - Adds a notification badge to Settings/Themes during the holiday season if not yet seen.
+- **Enhancement:** Updated Robot aesthetics:
+  - Added a **Santa Hat** with correct orientation (cylinder trim) for the festive theme.
+  - Brightened the robot's mouth with emissive material for better visibility in low light.
+
 ## V3.5.1 - Gallery Fixes
 - **Fix:** Resolved image display issues and API path handling for gallery images.
 
