@@ -1,5 +1,14 @@
 # Changelog
 
+## V3.5.3 - Gallery Lightbox & Sharing
+- **Feature:** Added **Gallery Lightbox**:
+  - Full-screen photo view with left/right keys and button navigation.
+  - Sorting logic consistency ensures Grid and Lightbox use the same order (Oldest -> Newest).
+- **Feature:** Added **Share Photo** capability:
+  - Generates deep links (`?albumId=...&photoId=...`) that automatically open the specific photo.
+  - Added copy-to-clipboard button in lightbox.
+- **Fix:** Lightbox Close button is now fully responsive (fixed pointer-events issue).
+
 ## V3.5.2 - Annual Christmas Update
 - **Feature:** Added **Christmas Theme** presets (snowy background, festive robot).
 - **Feature:** Implemented **Seasonal Theme Logic**:
