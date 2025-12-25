@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence, useIsPresent } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { X, Calendar, Image as ImageIcon, Edit2, Plus, UploadCloud, Trash2 } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import clsx from "clsx";
@@ -355,6 +355,65 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
         }
     };
 
+    // ------------------------------------------------------------------
+    // SORTING & LIGHTBOX LOGIC
+    // ------------------------------------------------------------------
+
+    // 1. Sort photos consistently (Oldest -> Newest based on filename timestamp)
+    const sortedPhotos = useMemo(() => {
+        return currentAlbum.photos.slice().sort((a: any, b: any) => {
+            const getTimestamp = (url: string) => {
+                const match = url.match(/\/(\d{13})_/);
+                return match ? parseInt(match[1]) : 0;
+            };
+            const tsA = getTimestamp(a.url);
+            const tsB = getTimestamp(b.url);
+            if (tsA && tsB) return tsA - tsB;
+            if (tsA) return -1;
+            if (tsB) return 1;
+            return 0;
+        });
+    }, [currentAlbum.photos]);
+
+    const [lightboxPhotoId, setLightboxPhotoId] = useState<string | null>(null);
+
+    const openLightbox = (photo: Photo) => {
+        setLightboxPhotoId(photo.id);
+    };
+
+    const closeLightbox = () => {
+        setLightboxPhotoId(null);
+    };
+
+    const navigateLightbox = (direction: 'next' | 'prev') => {
+        if (!lightboxPhotoId) return;
+        const currentIndex = sortedPhotos.findIndex(p => p.id === lightboxPhotoId);
+        if (currentIndex === -1) return;
+
+        let nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+
+        // Loop around or stop? User asked for "left and right buttons to go between".
+        // Usually finite navigation is safer, but looping is nice. Let's do finite for now to match "abide by sorting".
+        if (nextIndex >= 0 && nextIndex < sortedPhotos.length) {
+            setLightboxPhotoId(sortedPhotos[nextIndex].id);
+        }
+    };
+
+    // Keyboard navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!lightboxPhotoId) return;
+
+            if (e.key === 'ArrowRight') navigateLightbox('next');
+            if (e.key === 'ArrowLeft') navigateLightbox('prev');
+            if (e.key === 'Escape') closeLightbox();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [lightboxPhotoId, sortedPhotos]);
+
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -509,15 +568,21 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                     onScroll={handleScroll}
                 >
                     <MasonryGrid
-                        photos={currentAlbum.photos}
+                        sortedPhotos={sortedPhotos.slice(0, visibleCount)} // Pass pre-sorted
                         isOwner={isOwner && mounted}
                         isSelectingCover={isSelectingCover}
                         isUploading={isUploading}
                         uploadProgress={uploadProgress}
-                        visibleCount={visibleCount}
+                        // visibleCount={visibleCount} // No longer needed as we slice above
                         handleFileUpload={handleFileUpload}
                         handleDeletePhoto={handleDeletePhoto}
-                        handlePhotoClick={handlePhotoClick}
+                        handlePhotoClick={(photo: Photo) => {
+                            if (isSelectingCover) {
+                                handlePhotoClick(photo);
+                            } else {
+                                openLightbox(photo);
+                            }
+                        }}
                         isLowPowerMode={isLowPowerMode}
                     />
 
@@ -528,18 +593,108 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                     )}
                 </div>
             </motion.div >
+
+            {/* LIGHTBOX OVERLAY */}
+            <AnimatePresence>
+                {lightboxPhotoId && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-0 backdrop-blur-xl"
+                        onClick={closeLightbox}
+                    >
+                        {/* Close Button */}
+                        <button
+                            onClick={closeLightbox}
+                            className="absolute top-6 right-6 z-[210] p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
+                        >
+                            <X size={32} />
+                        </button>
+
+                        {/* Navigation Buttons */}
+                        <div className="absolute inset-0 flex items-center justify-between p-4 pointer-events-none">
+                            {(() => {
+                                const currentIndex = sortedPhotos.findIndex(p => p.id === lightboxPhotoId);
+                                const hasPrev = currentIndex > 0;
+                                const hasNext = currentIndex < sortedPhotos.length - 1;
+
+                                return (
+                                    <>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
+                                            className={clsx(
+                                                "pointer-events-auto p-4 rounded-full bg-black/50 text-white hover:bg-white/20 transition-all",
+                                                !hasPrev && "opacity-0 pointer-events-none"
+                                            )}
+                                        >
+                                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
+                                            className={clsx(
+                                                "pointer-events-auto p-4 rounded-full bg-black/50 text-white hover:bg-white/20 transition-all",
+                                                !hasNext && "opacity-0 pointer-events-none"
+                                            )}
+                                        >
+                                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                        </button>
+                                    </>
+                                );
+                            })()}
+                        </div>
+
+                        {/* Image / Video */}
+                        <div className="w-full h-full p-4 md:p-12 flex items-center justify-center pointer-events-none">
+                            {(() => {
+                                const photo = sortedPhotos.find(p => p.id === lightboxPhotoId);
+                                if (!photo) return null;
+
+                                return (
+                                    <motion.div
+                                        key={photo.id}
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="pointer-events-auto relative max-w-full max-h-full shadow-2xl"
+                                        onClick={(e) => e.stopPropagation()} // Prevent close on image click
+                                    >
+                                        {photo.type === "video" ? (
+                                            <video
+                                                src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
+                                                className="max-w-full max-h-[85vh] object-contain rounded-lg"
+                                                controls
+                                                autoPlay
+                                                muted={false}
+                                            />
+                                        ) : (
+                                            <img
+                                                src={`${getApiUrl()}/api/proxy?url=${encodeURIComponent(photo.url)}`}
+                                                className="max-w-full max-h-[85vh] object-contain rounded-lg"
+                                                alt="Lightbox"
+                                            />
+                                        )}
+                                    </motion.div>
+                                );
+                            })()}
+                        </div>
+
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div >
     );
 }
 
 // Sub-component for Masonry Layout to keep main component clean
 function MasonryGrid({
-    photos,
+    sortedPhotos, // UPDATED: Received sorted photos
     isOwner,
     isSelectingCover,
     isUploading,
     uploadProgress,
-    visibleCount,
+    // visibleCount, // REMOVED
     handleFileUpload,
     handleDeletePhoto,
     handlePhotoClick,
@@ -559,22 +714,8 @@ function MasonryGrid({
         return () => window.removeEventListener('resize', updateColumns);
     }, []);
 
-    // 1. Prepare items
-    const sortedPhotos = photos
-        .slice()
-        .sort((a: any, b: any) => {
-            const getTimestamp = (url: string) => {
-                const match = url.match(/\/(\d{13})_/);
-                return match ? parseInt(match[1]) : 0;
-            };
-            const tsA = getTimestamp(a.url);
-            const tsB = getTimestamp(b.url);
-            if (tsA && tsB) return tsA - tsB;
-            if (tsA) return -1;
-            if (tsB) return 1;
-            return 0;
-        })
-        .slice(0, visibleCount);
+    // 1. Prepare items - REMOVED sorting logic from here
+    // const sortedPhotos = ...
 
     // 2. Distribute into columns
     const cols: any[][] = Array.from({ length: columns }, () => []);
