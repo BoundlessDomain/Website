@@ -9,13 +9,41 @@ import HeroHighlights from "@/components/photos/HeroHighlights";
 import AlbumRow from "@/components/photos/AlbumRow";
 import { getApiUrl } from "@/utils/api";
 
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+
 export default function GalleryPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin text-primary" size={48} /></div>}>
+            <GalleryContent />
+        </Suspense>
+    );
+}
+
+function GalleryContent() {
+    const searchParams = useSearchParams();
     const [data, setData] = useState<{ highlights: any[], albums: any[] } | null>(null);
     const [loading, setLoading] = useState(true);
     const [selectedAlbum, setSelectedAlbum] = useState<any | null>(null);
     const [initialPhotoId, setInitialPhotoId] = useState<string | undefined>(undefined);
 
+    // Deep Linking Check on Data Load
+    useEffect(() => {
+        if (data && searchParams) {
+            const albumId = searchParams.get("albumId");
+            const photoId = searchParams.get("photoId");
 
+            if (albumId) {
+                const album = data.albums.find((a: any) => a.id === albumId);
+                if (album) {
+                    setSelectedAlbum(album);
+                    if (photoId) {
+                        setInitialPhotoId(photoId);
+                    }
+                }
+            }
+        }
+    }, [data, searchParams]);
 
     const fetchGallery = useCallback(async () => {
         try {

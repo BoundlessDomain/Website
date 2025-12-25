@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence, useIsPresent } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
-import { X, Calendar, Image as ImageIcon, Edit2, Plus, UploadCloud, Trash2 } from "lucide-react";
+import { X, Calendar, Image as ImageIcon, Edit2, Plus, UploadCloud, Trash2, Share2 } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import clsx from "clsx";
 import { supabase } from "@/utils/supabase";
@@ -105,6 +105,9 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
             const photoIndex = currentAlbum.photos.findIndex(p => p.id === initialPhotoId);
 
             if (photoIndex !== -1) {
+                // Open Lightbox immediately if deep linked
+                setLightboxPhotoId(initialPhotoId);
+
                 // If photo is outside current visible range, expand range!
                 if (photoIndex >= visibleCount) {
                     setVisibleCount(photoIndex + 20);
@@ -601,7 +604,7 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-0 backdrop-blur-xl"
+                        className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-0 backdrop-blur-xl pointer-events-auto"
                         onClick={closeLightbox}
                     >
                         {/* Close Button */}
@@ -610,6 +613,20 @@ export default function AlbumModal({ album, onClose, initialPhotoId, onAlbumUpda
                             className="absolute top-6 right-6 z-[210] p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
                         >
                             <X size={32} />
+                        </button>
+
+                        {/* Share Button */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const url = `${window.location.origin}/gallery?albumId=${currentAlbum.id}&photoId=${lightboxPhotoId}`;
+                                navigator.clipboard.writeText(url);
+                                alert("Link copied to clipboard!");
+                            }}
+                            className="absolute bottom-6 right-6 z-[210] p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors flex items-center gap-2"
+                            title="Share Photo"
+                        >
+                            <Share2 size={24} />
                         </button>
 
                         {/* Navigation Buttons */}
