@@ -46,9 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
         // Auth Check
-        // Auth Check
         const authHeader = req.headers.get('Authorization');
-        console.log(`[PhotoUpload] Auth Header Present: ${!!authHeader}`); // Debug log
 
         if (!authHeader) {
             console.warn("[PhotoUpload] Missing Auth Header");
