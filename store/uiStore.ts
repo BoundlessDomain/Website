@@ -132,7 +132,6 @@ export const useUIStore = create<UIState>()(
                         body: JSON.stringify({
                             leftNavItems: newLeft,
                             rightNavItems: newRight,
-                            // isDebugMode: state.isDebugMode // REMOVED
                         })
                     });
                 } catch (error) {
