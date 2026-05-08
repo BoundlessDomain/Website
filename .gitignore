@@ -55,3 +55,12 @@ ENV/
 
 # Cache
 backend/cache/
+
+# Build cache and logs
+tsconfig.tsbuildinfo
+*.log
+*.txt.log
+
+# Runtime JSON files
+python_backend/owners.json
+python_backend/feedback_log.json
